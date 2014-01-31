@@ -18,13 +18,15 @@ struct FnMapRsrc
 private:
   FnMapRsrc(const FnMapRsrc&);
 public:
-  FnMapRsrc():bSet(false) {};
+  FnMapRsrc():bSet(false),fullBufferAlloc(false) {};
 
   void setup(int _destNode,int _srcNode,int _sendMsgSize,int _rcvMsgSize);
   void cleanup();
 
   ~FnMapRsrc() {
     //QDPIO::cout << "~FnMapRsrc()\n";
+    if (fullBufferAlloc)
+      delete[] full_recv_buffer;
   }
 
   void qmp_wait() const;
@@ -33,9 +35,29 @@ public:
   void * getSendBufPtr() const { return send_buf; }
   void * getRecvBufPtr() const { return recv_buf; }
 
+  size_t getRecvBufferItems() const { return recv_buf_items; }
+  void  setRecvBufferItems( size_t sz ) const {
+    recv_buf_items = sz;
+  }
+  void  setFullRecvBufferSize( size_t sz ) const {
+    assert( !fullBufferAlloc && "already allocated");
+    full_recv_buffer = new char[sz];
+    fullBufferAlloc = true;
+  }
+
+  char* getFullRecvBuffer() const { 
+    assert( fullBufferAlloc && "not allocated");
+    return full_recv_buffer;
+  }
+
   bool bSet;
   mutable void * send_buf;
   mutable void * recv_buf;
+
+  mutable bool fullBufferAlloc;
+  mutable char * full_recv_buffer;
+  mutable size_t recv_buf_items;
+
   int srcnum, dstnum;
   QMP_msgmem_t msg[2];
   QMP_msghandle_t mh_a[2], mh;

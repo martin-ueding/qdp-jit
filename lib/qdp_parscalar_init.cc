@@ -18,6 +18,7 @@
 
 namespace QDP {
 
+  bool QDP_send_floats_compressed = false;
 
 	namespace ThreadReductions {
 		REAL64* norm2_results;

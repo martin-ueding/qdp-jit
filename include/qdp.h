@@ -113,6 +113,7 @@ using std::ostream;
 
 
 #include "qdp_llvm.h"
+#include "qdp_float_compress.h"
 
 #include "qdp_forward.h"
 #include "qdp_datalayout.h"

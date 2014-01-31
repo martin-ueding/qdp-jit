@@ -9,6 +9,8 @@
 #ifndef QDP_MAP_H
 #define QDP_MAP_H
 
+#include <ieee754.h>
+
 namespace QDP {
 
 // Helpful for communications
@@ -362,7 +364,12 @@ struct ForEach<UnaryNode<FnMap, A>, AddressLeaf, NullCombine>
       void * rcvBuf = NULL;
       if (map.hasOffnode()) {
 	const FnMapRsrc& rRSrc = fnmap.getCached();
-	rcvBuf = rRSrc.getRecvBufPtr();
+
+	if (QDP_send_floats_compressed)
+	  rcvBuf = (void*)rRSrc.getFullRecvBuffer();
+	else
+	  rcvBuf = rRSrc.getRecvBufPtr();
+
       }
       //QDP_info("Map:AddressLeaf: add recv buf p=%p",rcvBufDev);
       a.setAddr(rcvBuf);
@@ -371,7 +378,6 @@ struct ForEach<UnaryNode<FnMap, A>, AddressLeaf, NullCombine>
 #endif
     }
   };
-
 
 
 
@@ -407,9 +413,29 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
 	int dstnum = map.destnodes_num[f.subset.getId()][0]*sizeof(InnerType_t);
 	int srcnum = map.srcenodes_num[f.subset.getId()][0]*sizeof(InnerType_t);
 
+	char* buf_dst;
+	
+	typedef typename WordType<InnerType_t>::Type_t Float_t;
+	size_t float_size = sizeof(Float_t);
+
 	//QDPIO::cerr << "dest source site numbers = " << map.destnodes_num[f.subset.getId()][0] << " " << map.srcenodes_num[f.subset.getId()][0] << "\n";
 
+
+	if (QDP_send_floats_compressed) {
+	  buf_dst = new char[dstnum];
+	  dstnum /= float_size;
+	  srcnum /= float_size;
+	  QDPIO::cout << "dividing by " << float_size << "\n";
+	  QDPIO::cout << "number of bytes to send: " << dstnum << ", rcv: " << srcnum << "\n";
+	}
+
 	const FnMapRsrc& rRSrc = fnmap.getResource(srcnum,dstnum);
+
+	if (QDP_send_floats_compressed) {
+	  rRSrc.setFullRecvBufferSize( srcnum * float_size );
+	  rRSrc.setRecvBufferItems( srcnum );
+	}
+
 
 	const int my_node = Layout::nodeNumber();
 
@@ -438,9 +464,36 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
 	  }
 
 	// Execute the function
-	function_gather_exec(function, rRSrc.getSendBufPtr() , map , subexpr , f.subset );
+	if (!QDP_send_floats_compressed) 
+	  function_gather_exec(function, rRSrc.getSendBufPtr() , map , subexpr , f.subset );
+	else {
+	  function_gather_exec(function, buf_dst , map , subexpr , f.subset );
+
+	  if (float_size == 4) 
+	    {
+	      float* float_array = (float*)(buf_dst);
+	      unsigned char* byte_array = (unsigned char*)(rRSrc.getSendBufPtr());
+	      for( int i = 0 ; i < dstnum ; ++i ) {
+		byte_array[i] = ieee754_32_compress( float_array[i] , 3 , 128 );
+		QDPIO::cerr << "orig = " << float_array[i] << "  sending " << byte_array[i] << "\n";
+	      }
+	    } 
+	  else 
+	    {
+	      double* double_array = (double*)(buf_dst);
+	      unsigned char* byte_array = (unsigned char*)(rRSrc.getSendBufPtr());
+	      for( int i = 0 ; i < dstnum ; ++i ) {
+		byte_array[i] = ieee754_64_compress( double_array[i] , 3 , 1024 );
+		QDPIO::cerr << "orig = " << double_array[i] << "  sending " << byte_array[i] << "\n";
+	      }
+	    }
+	}
 
 	rRSrc.send_receive();
+
+	if (QDP_send_floats_compressed) {
+	  delete[] buf_dst;
+	}
 	
 	returnVal = maps_involved | map.getId();
 #endif
@@ -460,6 +513,8 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
 template<class A, class CTag>
 struct ForEach<UnaryNode<FnMap, A>, ShiftPhase2 , CTag>
 {
+  typedef typename ForEach<A, EvalLeaf1, OpCombine>::Type_t InnerTypeA_t;
+  typedef typename Combine1<InnerTypeA_t, FnMap, OpCombine>::Type_t InnerType_t;
   //typedef typename ForEach<A, EvalLeaf1, OpCombine>::Type_t TypeA_t;
   //typedef typename Combine1<TypeA_t, FnMap, OpCombine>::Type_t Type_t;
   //typedef QDPExpr<A,OLattice<Type_t> > Expr;
@@ -480,6 +535,35 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase2 , CTag>
 #endif
 
       rRSrc.qmp_wait();
+
+      typedef typename WordType<InnerType_t>::Type_t Float_t;
+      size_t float_size = sizeof(Float_t);
+
+      if (QDP_send_floats_compressed) {
+	
+	if (float_size == 4) 
+	  {
+	    for( int i = 0 ; i < rRSrc.getRecvBufferItems() ; ++i )
+	      {
+		unsigned char* buf_byte = (unsigned char*)rRSrc.getRecvBufPtr();
+		float* buf_float = (float*)rRSrc.getFullRecvBuffer();
+		buf_float[i] = ieee754_32_uncompress( buf_byte[i] , 3, 128);
+		QDPIO::cerr << "received " << buf_byte[i] << "   uncompressed " << buf_float[i] << "\n";
+	      }
+	  }
+	else
+	  {
+	    for( int i = 0 ; i < rRSrc.getRecvBufferItems() ; ++i )
+	      {
+		unsigned char* buf_byte = (unsigned char*)rRSrc.getRecvBufPtr();
+		double* buf_float = (double*)rRSrc.getFullRecvBuffer();
+		buf_float[i] = ieee754_64_uncompress( buf_byte[i] , 3, 1024);
+		QDPIO::cerr << "received " << buf_byte[i] << "   uncompressed " << buf_float[i] << "\n";
+	      }
+	  }
+      }
+
+
 
 #ifdef JIT_TIMING
       sw.stop();

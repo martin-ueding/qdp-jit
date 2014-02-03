@@ -478,8 +478,8 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
 	      float* float_array = (float*)(buf_dst);
 	      unsigned char* byte_array = (unsigned char*)(rRSrc.getSendBufPtr());
 	      for( int i = 0 ; i < dstnum ; ++i ) {
-		byte_array[i] = ieee754_32_compress( float_array[i] , 3 , 128 );
-		QDPIO::cerr << "orig = " << float_array[i] << "  sending " << byte_array[i] << "\n";
+		byte_array[i] = ieee754_32_compress( float_array[i] );
+		//QDPIO::cerr << "orig = " << float_array[i] << "  sending " << byte_array[i] << "\n";
 	      }
 	    } 
 	  else 
@@ -487,8 +487,8 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
 	      double* double_array = (double*)(buf_dst);
 	      unsigned char* byte_array = (unsigned char*)(rRSrc.getSendBufPtr());
 	      for( int i = 0 ; i < dstnum ; ++i ) {
-		byte_array[i] = ieee754_64_compress( double_array[i] , 3 , 1024 );
-		QDPIO::cerr << "orig = " << double_array[i] << "  sending " << byte_array[i] << "\n";
+		byte_array[i] = ieee754_64_compress( double_array[i] );
+		//QDPIO::cerr << "orig = " << double_array[i] << "  sending " << byte_array[i] << "\n";
 	      }
 	    }
 	}
@@ -551,8 +551,8 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase2 , CTag>
 	      {
 		unsigned char* buf_byte = (unsigned char*)rRSrc.getRecvBufPtr();
 		float* buf_float = (float*)rRSrc.getFullRecvBuffer();
-		buf_float[i] = ieee754_32_uncompress( buf_byte[i] , 3, 128);
-		QDPIO::cerr << "received " << buf_byte[i] << "   uncompressed " << buf_float[i] << "\n";
+		buf_float[i] = ieee754_32_uncompress( buf_byte[i] );
+		//QDPIO::cerr << "received " << buf_byte[i] << "   uncompressed " << buf_float[i] << "\n";
 	      }
 	  }
 	else
@@ -561,8 +561,8 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase2 , CTag>
 	      {
 		unsigned char* buf_byte = (unsigned char*)rRSrc.getRecvBufPtr();
 		double* buf_float = (double*)rRSrc.getFullRecvBuffer();
-		buf_float[i] = ieee754_64_uncompress( buf_byte[i] , 3, 1024);
-		QDPIO::cerr << "received " << buf_byte[i] << "   uncompressed " << buf_float[i] << "\n";
+		buf_float[i] = ieee754_64_uncompress( buf_byte[i] );
+		//QDPIO::cerr << "received " << buf_byte[i] << "   uncompressed " << buf_float[i] << "\n";
 	      }
 	  }
       }

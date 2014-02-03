@@ -4,8 +4,20 @@
 namespace QDP {
 
 
-unsigned char ieee754_64_compress(double in_flt,size_t mant_count, unsigned int bias)
+namespace FLOAT {
+  size_t mant_count_sp = 3;
+  size_t mant_count_dp = 3;
+
+  unsigned char bias_sp = 128;
+  unsigned int  bias_dp = 1024;
+}
+
+
+unsigned char ieee754_64_compress(double in_flt)
 {
+  size_t mant_count = FLOAT::mant_count_dp;
+  unsigned int bias = FLOAT::bias_dp;
+
   ieee754_double in;
   in.d = in_flt;
 
@@ -24,8 +36,11 @@ unsigned char ieee754_64_compress(double in_flt,size_t mant_count, unsigned int 
 
 
 
-double ieee754_64_uncompress( unsigned char in , size_t mant_count , unsigned int bias)
+double ieee754_64_uncompress( unsigned char in )
 {
+  size_t mant_count = FLOAT::mant_count_dp;
+  unsigned int bias = FLOAT::bias_dp;
+
   if (!in)
     return 0.0f;
 
@@ -46,8 +61,11 @@ double ieee754_64_uncompress( unsigned char in , size_t mant_count , unsigned in
 
 
 
-unsigned char ieee754_32_compress(float in_flt,size_t mant_count, unsigned char bias)
+unsigned char ieee754_32_compress( float in_flt )
 {
+  size_t mant_count  = FLOAT::mant_count_sp;
+  unsigned char bias = FLOAT::bias_sp;
+
   ieee754_float in;
   in.f = in_flt;
 
@@ -70,8 +88,11 @@ unsigned char ieee754_32_compress(float in_flt,size_t mant_count, unsigned char 
 }
 
 
-float ieee754_32_uncompress( unsigned char in , size_t mant_count , unsigned char bias)
+float ieee754_32_uncompress( unsigned char in )
 {
+  size_t mant_count  = FLOAT::mant_count_sp;
+  unsigned char bias = FLOAT::bias_sp;
+
   // underflow
   if (!in)
     return 0.0f;

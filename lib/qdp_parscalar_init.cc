@@ -219,6 +219,30 @@ namespace QDP {
 				sscanf((*argv)[++i], "%d", &threads);
 				qdpSetNumThreads(threads);
 			}
+			else if (strcmp((*argv)[i], "-mant-count")==0) 
+			{
+				int mant_count;
+				sscanf((*argv)[++i], "%d", &mant_count);
+				//QDPIO::cerr << "Float compression: Using " << mant_count << " bits from mantissa.\n";
+				FLOAT::mant_count_sp = mant_count;
+				FLOAT::mant_count_dp = mant_count;
+			}
+			else if (strcmp((*argv)[i], "-bias-sp")==0) 
+			{
+				int bias;
+				sscanf((*argv)[++i], "%d", &bias);
+				// QDPIO::cerr << "Float compression: Setting SP bias to " << bias 
+				// 	    << ". (Default being " << FLOAT::bias_sp << ")\n";
+				FLOAT::bias_sp = bias;
+			}
+			else if (strcmp((*argv)[i], "-bias-dp")==0) 
+			{
+				int bias;
+				sscanf((*argv)[++i], "%d", &bias);
+				// QDPIO::cerr << "Float compression: Setting DP bias to " << bias 
+				// 	    << ". (Default being " << FLOAT::bias_dp << ")\n";
+				FLOAT::bias_dp = bias;
+			}
 			else if (strcmp((*argv)[i], "-mattr")==0) 
 			{
 			  char tmp[1024];
@@ -286,7 +310,6 @@ namespace QDP {
 				QDP_abort(1);
 			}
 		}
-		
 
 		QMP_verbose (QMP_verboseP);
 		

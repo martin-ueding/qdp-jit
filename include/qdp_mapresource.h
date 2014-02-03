@@ -18,7 +18,7 @@ struct FnMapRsrc
 private:
   FnMapRsrc(const FnMapRsrc&);
 public:
-  FnMapRsrc():bSet(false),fullBufferAlloc(false) {};
+  FnMapRsrc():bSet(false),fullBufferAlloc(false),recv_buf_items(0),full_recv_buf_size(0) {};
 
   void setup(int _destNode,int _srcNode,int _sendMsgSize,int _rcvMsgSize);
   void cleanup();
@@ -37,12 +37,19 @@ public:
 
   size_t getRecvBufferItems() const { return recv_buf_items; }
   void  setRecvBufferItems( size_t sz ) const {
+    if (recv_buf_items) {
+      assert( recv_buf_items == sz && "different size requested");
+    }
     recv_buf_items = sz;
   }
   void  setFullRecvBufferSize( size_t sz ) const {
-    assert( !fullBufferAlloc && "already allocated");
+    if (full_recv_buf_size) {
+      assert( fullBufferAlloc && "not allocated");
+      assert( full_recv_buf_size == sz && "different size requested");
+    }
     full_recv_buffer = new char[sz];
     fullBufferAlloc = true;
+    full_recv_buf_size = sz;
   }
 
   char* getFullRecvBuffer() const { 
@@ -57,6 +64,7 @@ public:
   mutable bool fullBufferAlloc;
   mutable char * full_recv_buffer;
   mutable size_t recv_buf_items;
+  mutable size_t full_recv_buf_size;
 
   int srcnum, dstnum;
   QMP_msgmem_t msg[2];

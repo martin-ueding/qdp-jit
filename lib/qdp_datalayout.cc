@@ -9,16 +9,17 @@ namespace QDP {
   // as used for the coalesced memory accesses.
 
 
-  namespace DataLayout {
-    int64_t inner = 4;
+  namespace LLVMOPT {
+    int64_t BBsearch = 400;
   }
 
-  int64_t getDataLayoutInnerSize() {
-    return DataLayout::inner;
+
+  int64_t getBBSearchLimit() {
+    return LLVMOPT::BBsearch;
   }
 
-  void setDataLayoutInnerSize( int64_t i ) {
-    DataLayout::inner = i;
+  void setBBSearchLimit( int64_t i ) {
+    LLVMOPT::BBsearch = i;
   }
 
 
@@ -26,13 +27,13 @@ namespace QDP {
   {
     //std::cout << "Using inner length = " << DataLayout::inner << "\n";
 
-    llvm::Value * inner = llvm_create_value( DataLayout::inner );
+    llvm::Value * inner = llvm_create_value( 1 );
     llvm::Value * iv_div_inner = llvm_div( index , inner );   // outer
     llvm::Value * iv_mod_inner = llvm_rem( index , inner );   // inner
 
     IndexDomainVector args;
-    args.push_back( make_pair( Layout::sitesOnNode()/DataLayout::inner , iv_div_inner ) );
-    args.push_back( make_pair( DataLayout::inner , iv_mod_inner ) );
+    args.push_back( make_pair( Layout::sitesOnNode() , iv_div_inner ) );
+    args.push_back( make_pair( 1 , iv_mod_inner ) );
 
     return args;
   }
@@ -95,7 +96,91 @@ namespace QDP {
     QDPIO::cerr << "\n";
   }
 
+
 #if 1
+  llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
+    // for(int i=0 ; i<a.size() ; ++i) 
+    //   QDPIO::cout << i << "  " << a.at(i).first << "\n";
+    assert( a.size() == 7 && "index domain vector size is not 8");
+
+    llvm::Value* offset = llvm_create_value(0);
+
+    // for( int i = 0 ; i < Nd ; ++i ) {
+    //   llvm::Value* l_size = llvm_create_value( Layout::subgridLattSize()[a.at(i).first] );
+    //   llvm::Value* l_val  = a.at(i).second;
+
+    //   offset = llvm_add( llvm_mul( offset , l_size ) , l_val );
+    // }
+
+    //return offset;
+
+    const size_t nIx  = 0; // x
+    const size_t nIy  = 1; // y
+    const size_t nIz  = 2; // z
+    const size_t nIt  = 3; // t
+    const size_t nIs  = 4; // spin
+    const size_t nIc  = 5; // color
+    const size_t nIr  = 6; // reality
+
+    int          Lx, Ly, Lz, Lt, Ls, Lc, Lr;
+    llvm::Value *ix,*iy,*iz,*it,*is,*ic,*ir;
+
+    //Lx = a.at(nIx).first;
+    ix = a.at(nIx).second;
+
+    //Ly = a.at(nIy).first;
+    iy = a.at(nIy).second;
+
+    //Lz = a.at(nIz).first;
+    iz = a.at(nIz).second;
+
+    //Lt = a.at(nIt).first;
+    it = a.at(nIt).second;
+
+    Ls = a.at(nIs).first;
+    is = a.at(nIs).second;
+
+    Lc = a.at(nIc).first;
+    ic = a.at(nIc).second;
+
+    Lr = a.at(nIr).first;
+    ir = a.at(nIr).second;
+    
+    llvm::Value * Ix = llvm_create_value( Layout::subgridLattSize()[0] );
+    llvm::Value * Iy = llvm_create_value( Layout::subgridLattSize()[1] );
+    llvm::Value * Iz = llvm_create_value( Layout::subgridLattSize()[2] );
+    llvm::Value * It = llvm_create_value( Layout::subgridLattSize()[3] );
+    llvm::Value * Is = llvm_create_value(Ls);
+    llvm::Value * Ic = llvm_create_value(Lc);
+    llvm::Value * Ir = llvm_create_value(Lr);
+
+    //QDPIO::cout << Is << " " << Ic << " " << Ir << "\n";
+
+      // llvm::Value* l_size = llvm_create_value( Layout::subgridLattSize()[a.at(i).first] );
+      // llvm::Value* l_val  = a.at(i).second;
+      // offset = llvm_add( llvm_mul( offset , l_size ) , l_val );
+
+    //llvm::Value* offset = llvm_create_value(0);
+
+    llvm::Value * ix_m4 = llvm_rem( ix , llvm_create_value((int)4) );
+    llvm::Value * ix_d4 = llvm_div( ix , llvm_create_value((int)4) );
+
+    offset = llvm_add( llvm_mul( offset , It ) , it );
+    offset = llvm_add( llvm_mul( offset , Iz ) , iz );
+    offset = llvm_add( llvm_mul( offset , Iy ) , iy );
+    offset = llvm_add( llvm_mul( offset , llvm_div(Ix,llvm_create_value((int)4) ) ) , ix_d4 );
+    offset = llvm_add( llvm_mul( offset , Is ) , is );
+    offset = llvm_add( llvm_mul( offset , Ic ) , ic );
+    offset = llvm_add( llvm_mul( offset , Ir ) , ir );
+    offset = llvm_add( llvm_mul( offset , llvm_create_value((int)4) ) , ix_m4 );
+
+    return offset;
+
+  }
+#endif
+
+
+#if 0
   llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
     if ( a.size() == 5 ) {
       const size_t nIvo = 0; // volume outer

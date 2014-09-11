@@ -325,11 +325,11 @@ namespace QDP {
 				setProgramProfileLevel(lev);
 			}
 #endif
-			else if (strcmp((*argv)[i], "-inner")==0) 
+			else if (strcmp((*argv)[i], "-bb-vectorize-search-limit")==0) 
 			{
 				int inner;
 				sscanf((*argv)[++i], "%d", &inner);
-				setDataLayoutInnerSize(inner);
+				setBBSearchLimit(inner);
 			}
 			else if (strcmp((*argv)[i], "-layout")==0) 
 			{

@@ -15,7 +15,11 @@ namespace QDP {
 
 
 template<class T, class T1, class Op, class RHS>
-void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QDPExpr<RHS,OLattice<T1> >& rhs)
+void function_build(JitFunction& func, 
+		    OLattice<T>& dest, 
+		    const Op& op, 
+		    const QDPExpr<RHS,OLattice<T1> >& rhs,
+		    const Subset& s)
 {
 #ifdef LLVM_DEBUG
   QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
@@ -25,16 +29,9 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
   int withShift = forEach(rhs, hasShift , BitOrCombine());
 
   //QDPIO::cerr << "withShift = " << withShift << "\n";
-
-  if (llvm_debug::debug_func_write) {
-    if (Layout::primaryNode()) {
-      llvm_debug_write_set_name(__PRETTY_FUNCTION__,"streaming");
-    }
-  }
-
-
   {
-    JitMainLoop loop( getDataLayoutInnerSize() , false );  // no offnode shift
+    //JitMainLoop loop;
+    llvm_start_new_function();
 
     ParamLeaf param_leaf;
 
@@ -46,14 +43,33 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
     typedef typename ForEach<QDPExpr<RHS,OLattice<T1> >, ParamLeaf, TreeCombine>::Type_t View_t;
     View_t rhs_view(forEach(rhs, param_leaf, TreeCombine()));
 
-    IndexDomainVector idx = loop.getIdx();
 
-    op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ), 
-	    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutCoalesced , idx ), OpCombine()));
 
-    loop.done();
+    for ( int t = 0 ; t < Layout::subgridLattSize()[3] ; ++t ) {
+      for ( int z = 0 ; z < Layout::subgridLattSize()[2] ; ++z ) {
+	for ( int y = 0 ; y < Layout::subgridLattSize()[1] ; ++y ) {
+	  for ( int x = 0 ; x < Layout::subgridLattSize()[0] ; ++x ) {
+	    IndexDomainVector idx;
 
-    //QDPIO::cerr << "function_build (no siteperm)\n";
+	    llvm::Value* llvm_x = llvm_create_value(x);
+	    llvm::Value* llvm_y = llvm_create_value(y);
+	    llvm::Value* llvm_z = llvm_create_value(z);
+	    llvm::Value* llvm_t = llvm_create_value(t);
+
+	    idx.push_back( make_pair( 0 , llvm_x ) );
+	    idx.push_back( make_pair( 1 , llvm_y ) );
+	    idx.push_back( make_pair( 2 , llvm_z ) );
+	    idx.push_back( make_pair( 3 , llvm_t ) );
+
+
+
+
+	    op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ), 
+		    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutCoalesced , idx ), OpCombine()));
+	  }
+	}
+      }
+    }
 
     func.func().push_back( jit_function_epilogue_get("jit_eval.ptx") );
   }
@@ -64,39 +80,6 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
   //   * offnode shifts
   //   * unordered sets
 
-  if (llvm_debug::debug_func_write) {
-    if (Layout::primaryNode()) {
-      llvm_debug_write_set_name(__PRETTY_FUNCTION__,"siteperm");
-    }
-  }
-
-  {
-    // We set inner length to 1 no matter whether we use this
-    // version for unordered subset or offnode shifts.
-
-    JitMainLoop loop( 1 , true );
-
-    ParamLeaf param_leaf;
-
-    typedef typename LeafFunctor<OLattice<T>, ParamLeaf>::Type_t  FuncRet_t;
-    FuncRet_t dest_jit(forEach(dest, param_leaf, TreeCombine()));
-
-    typename AddOpParam<Op,ParamLeaf>::Type_t op_jit = AddOpParam<Op,ParamLeaf>::apply(op,param_leaf);
-
-    typedef typename ForEach<QDPExpr<RHS,OLattice<T1> >, ParamLeaf, TreeCombine>::Type_t View_t;
-    View_t rhs_view(forEach(rhs, param_leaf, TreeCombine()));
-
-    IndexDomainVector idx = loop.getIdx();
-
-    op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ), 
-	    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutCoalesced , idx ), OpCombine()));
-
-    loop.done();
-
-    //QDPIO::cerr << "function_build (siteperm)\n";
-
-    func.func().push_back( jit_function_epilogue_get("jit_eval.ptx") );
-  }
 }
 
 
@@ -151,11 +134,6 @@ function_exec(const JitFunction& function,
 
       //QDPIO::cerr << "we have " << innerCount << " inner and " << faceCount << " face sites\n";
 
-      // if (( innerCount % getDataLayoutInnerSize() ) ||
-      // 	  ( faceCount  % getDataLayoutInnerSize() ))
-      // 	QDP_error_exit("implementation limitation. innerCount=%d , faceCount=%d must be multiple of inner length=%d",
-      // 		       innerCount,faceCount,getDataLayoutInnerSize());
-
       // QDPIO::cerr << "Inner sites: ";
       // for (int i = 0 ; i < innerCount ; ++i )
       // 	QDPIO::cerr << innerSites[i] << " ";
@@ -185,7 +163,7 @@ function_exec(const JitFunction& function,
       sw.start();
 #endif
 
-      jit_dispatch(function.func().at(1),innerCount,1,false,0,addr_leaf); // 2nd function pointer is offnode version
+      jit_dispatch(function.func().at(1),addr_leaf); // 2nd function pointer is offnode version
 
 #ifdef JIT_TIMING
       sw.stop();
@@ -222,7 +200,7 @@ function_exec(const JitFunction& function,
       sw.start();
 #endif
 
-      jit_dispatch(function.func().at(1),faceCount,1,false,0,addr_leaf_face);
+      jit_dispatch(function.func().at(1),addr_leaf_face);
 
 #ifdef JIT_TIMING
       sw.stop();
@@ -249,10 +227,6 @@ function_exec(const JitFunction& function,
 	  /* QDPIO::cerr << "Calling function for ordered subset count=" << s.numSiteTable() << " start=" << s.start()  */
 	  /* 	      << " addr_leaf.size()=" << addr_leaf.addr.size() << "\n"; */
 
-	  if (s.numSiteTable() % getDataLayoutInnerSize())
-	    QDP_error_exit("number of sites in ordered subset is %d, but inner length is %d" , 
-			   s.numSiteTable() , getDataLayoutInnerSize());
-
 #ifdef JIT_TIMING
       sw.stop();
       tt.push_back( sw.getTimeInMicroseconds() );
@@ -260,7 +234,7 @@ function_exec(const JitFunction& function,
       sw.start();
 #endif
 
-	  jit_dispatch(function.func().at(0),s.numSiteTable(),getDataLayoutInnerSize(),s.hasOrderedRep(),s.start(),addr_leaf);
+	  jit_dispatch(function.func().at(0),addr_leaf);
 
 #ifdef JIT_TIMING
       sw.stop();
@@ -289,7 +263,7 @@ function_exec(const JitFunction& function,
 
 	  //QDPIO::cerr << "Calling function for not ordered subset\n";
 
-	  jit_dispatch(function.func().at(1),s.numSiteTable(),1,s.hasOrderedRep(),s.start(),addr_leaf);
+	  jit_dispatch(function.func().at(1),addr_leaf);
 	}
     } 
 
@@ -364,11 +338,7 @@ function_lat_sca_exec(const JitFunction& function,
   std::cout << "calling eval(Lattice,Scalar)..\n";
 #endif
 
-  if (s.numSiteTable() % getDataLayoutInnerSize())
-    QDP_error_exit("number of sites in ordered subset is %d, but inner length is %d" , 
-		   s.numSiteTable() , getDataLayoutInnerSize());
-
-  jit_dispatch(function.func().at(0),s.numSiteTable(),getDataLayoutInnerSize(),s.hasOrderedRep(),s.start(),addr_leaf);
+  jit_dispatch(function.func().at(0),addr_leaf);
 }
 
 
@@ -414,11 +384,7 @@ function_zero_rep_exec(const JitFunction& function, OLattice<T>& dest, const Sub
   std::cout << "calling zero_rep(Lattice,Subset)..\n";
 #endif
 
-  if (s.numSiteTable() % getDataLayoutInnerSize())
-    QDP_error_exit("number of sites in ordered subset is %d, but inner length is %d" , 
-		   s.numSiteTable() , getDataLayoutInnerSize());
-
-  jit_dispatch( function.func().at(0) , s.numSiteTable() , getDataLayoutInnerSize() , s.hasOrderedRep() , s.start(), addr_leaf );
+  jit_dispatch( function.func().at(0) , addr_leaf );
 }
 
 
@@ -591,7 +557,7 @@ function_gather_exec( const JitFunction& function,
       sw.start();
 #endif
 
-      jit_dispatch( function.func().at(0) , map.soffset(subset).size() , 1 , true , 0 , addr_leaf);
+      jit_dispatch( function.func().at(0) , addr_leaf);
 
 #ifdef JIT_TIMING
       sw.stop();

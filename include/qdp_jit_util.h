@@ -76,7 +76,7 @@ namespace QDP {
 
     JitMainLoop() {
       do_siteperm = false;
-      inner = getDataLayoutInnerSize();
+      inner = 0;
       llvm_start_new_function();
       done_preamble = false;
     }

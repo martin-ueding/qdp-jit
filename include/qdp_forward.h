@@ -164,8 +164,8 @@ namespace QDP
   llvm::Value      *get_index_from_index_vector( const IndexDomainVector& idx );
   IndexDomainVector get_index_vector_from_index( llvm::Value *index );
   IndexDomainVector get_scalar_index_vector_from_index( llvm::Value *index );
-  void setDataLayoutInnerSize( int64_t i );
-  int64_t getDataLayoutInnerSize();
+  void setBBSearchLimit( int64_t i );
+  int64_t getBBSearchLimit();
 
 #if 1
   template<class T, class T1, class RHS>

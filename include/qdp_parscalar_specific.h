@@ -167,7 +167,7 @@ void evaluate(OLattice<T>& dest, const Op& op, const QDPExpr<RHS,OLattice<T1> >&
   if (!function.built())
     {
       //QDPIO::cout << __PRETTY_FUNCTION__ << ": does not exist - will build\n";
-      function_build( function , dest, op, rhs);
+      function_build( function , dest, op, rhs, s);
       //QDPIO::cout << __PRETTY_FUNCTION__ << ": did not exist - finished building\n";
     }
   else

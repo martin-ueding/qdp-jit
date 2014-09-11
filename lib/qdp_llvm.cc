@@ -34,7 +34,7 @@ namespace QDP {
   llvm::Value *r_arg_ordered;
   llvm::Value *r_arg_start;
 
-  llvm::OwningPtr<llvm::Module> module_libdevice;
+  std::unique_ptr<llvm::Module> module_libdevice;
 
   llvm::Type* llvm_type<float>::value;
   llvm::Type* llvm_type<double>::value;
@@ -52,8 +52,11 @@ namespace QDP {
   namespace llvm_debug {
     bool debug_func_build      = false;
     bool debug_func_dump       = false;
-    bool debug_func_write      = false;
+    bool debug_func_write_opt  = false;
+    bool debug_func_write_gen  = false;
+    bool debug_func_asm        = false;
     bool debug_loop_vectorizer = false;
+    bool debug_SLP_vectorizer = false;
     std::string name_pretty;
     std::string name_additional;
   }
@@ -64,6 +67,10 @@ namespace QDP {
       llvm_debug::debug_loop_vectorizer = true;
       return;
     }
+    if (str.find("SLP-vectorize") != string::npos) {
+      llvm_debug::debug_SLP_vectorizer = true;
+      return;
+    }
     if (str.find("function-builder") != string::npos) {
       llvm_debug::debug_func_build = true;
       return;
@@ -72,8 +79,16 @@ namespace QDP {
       llvm_debug::debug_func_dump = true;
       return;
     }
-    if (str.find("function-write") != string::npos) {
-      llvm_debug::debug_func_write = true;
+    if (str.find("function-write-gen") != string::npos) {
+      llvm_debug::debug_func_write_gen = true;
+      return;
+    }
+    if (str.find("function-write-opt") != string::npos) {
+      llvm_debug::debug_func_write_opt = true;
+      return;
+    }
+    if (str.find("function-asm") != string::npos) {
+      llvm_debug::debug_func_asm = true;
       return;
     }
     QDP_error_exit("unknown debug argument: %s",c_str);
@@ -263,6 +278,7 @@ namespace QDP {
 
     // "-print-machineinstrs"
 
+#if 0
     char * argument = new char[128];
     sprintf( argument , "-vectorizer-min-trip-count=%d" , (int)getDataLayoutInnerSize() );
 
@@ -273,6 +289,20 @@ namespace QDP {
     llvm::cl::ParseCommandLineOptions(2, SetTinyVectorThreshold);
 
     delete[] argument;
+#endif
+#if 0
+    char * argument = new char[128];
+    sprintf( argument , "-bb-vectorize-search-limit=%d" , (int)getBBSearchLimit() );
+    //sprintf( argument , "-help" );
+
+    QDPIO::cerr << "Setting BB search limit to " << (int)getBBSearchLimit() << "\n";
+    //QDPIO::cerr << "Setting loop vectorizer minimum trip count to " << (int)getDataLayoutInnerSize() << "\n";
+    
+    const char *SetTinyVectorThreshold[] = {"program",argument};
+    llvm::cl::ParseCommandLineOptions(2, SetTinyVectorThreshold);
+
+    delete[] argument;
+#endif
 
     llvm::InitializeNativeTarget();
 
@@ -386,11 +416,11 @@ namespace QDP {
     std::vector<llvm::Type*> vecPT;
 
     // Push back lo,hi,myId
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
-    vecPT.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext()) );  // ordered
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
+    // vecPT.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext()) );  // ordered
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
 
     vecPT.insert( vecPT.end() , vecParamType.begin() , vecParamType.end() );
 
@@ -406,25 +436,25 @@ namespace QDP {
 
     llvm::Function::arg_iterator AI = mainFunc->arg_begin();
     llvm::Function::arg_iterator AE = mainFunc->arg_end();
-    AI->setName("lo"); 
-    r_arg_lo = AI; 
-    AI++;
+    // AI->setName("lo"); 
+    // r_arg_lo = AI; 
+    // AI++;
     
-    AI->setName("hi"); 
-    r_arg_hi = AI;
-    AI++;
+    // AI->setName("hi"); 
+    // r_arg_hi = AI;
+    // AI++;
     
-    AI->setName("myId"); 
-    r_arg_myId = AI;
-    AI++;
+    // AI->setName("myId"); 
+    // r_arg_myId = AI;
+    // AI++;
 
-    AI->setName("ordered");
-    r_arg_ordered = AI;
-    AI++;
+    // AI->setName("ordered");
+    // r_arg_ordered = AI;
+    // AI++;
 
-    AI->setName("start"); 
-    r_arg_start = AI;
-    AI++;
+    // AI->setName("start"); 
+    // r_arg_start = AI;
+    // AI++;
 
     unsigned Idx = 0;
     for ( ; AI != AE ; ++AI, ++Idx) {
@@ -974,6 +1004,7 @@ namespace QDP {
 
 
   void llvm_print_module( llvm::Module* m , const char * fname ) {
+#if 0
     std::string ErrorMsg;
     llvm::raw_fd_ostream outfd( fname ,ErrorMsg, llvm::sys::fs::OpenFlags::F_Text);
     llvm::outs() << ErrorMsg << "\n";
@@ -986,6 +1017,7 @@ namespace QDP {
       PM.run( *m );
 #endif
     }
+#endif
   }
 
 
@@ -1073,9 +1105,9 @@ namespace QDP {
     std::string error;
     unsigned OpenFlags = 0;
     OpenFlags |= llvm::raw_fd_ostream::F_Binary;
-    llvm::OwningPtr<llvm::tool_output_file> Out( new llvm::tool_output_file( "test.bc" , error, OpenFlags) );
+    std::unique_ptr<llvm::tool_output_file> Out( new llvm::tool_output_file( "test.bc" , error, OpenFlags) );
     if (!Out) {
-      llvm::errs() << "Could not create OwningPtr<tool_output_file>\n";
+      llvm::errs() << "Could not create std::unique_ptr<tool_output_file>\n";
       exit(1);
     }
     llvm::formatted_raw_ostream fros(Out->os());
@@ -1237,15 +1269,69 @@ namespace QDP {
     assert(function_created && "Function not created");
     assert(function_started && "Function not started");
 
+    llvm::Function *mainFunc_extern;
 #if 0
-    //
-    QDPIO::cerr << "loading module from mod_peek.ll\n";
+    QDPIO::cerr << "loading module from module.ll\n";
     llvm::SMDiagnostic Err;
-    Mod = llvm::ParseIRFile("mod_peek.ll", Err, llvm::getGlobalContext());
+    Mod = llvm::ParseIRFile("module.ll", Err, llvm::getGlobalContext());
+
+    Mod->setTargetTriple(llvm::sys::getProcessTriple());
+    if (llvm_debug::debug_func_build) {
+      if (vec_mattr.size() > 0) {
+	QDPIO::cerr << "    MCPU attributes: ";
+	for ( int i = 0 ; i < vec_mattr.size() ; i++ )
+	  QDPIO::cerr << vec_mattr.at(i) << " ";
+	QDPIO::cerr << "\n";
+      }
+    }
+    llvm::EngineBuilder engineBuilder(Mod);
+    engineBuilder.setMCPU(llvm::sys::getHostCPUName());
+    if (vec_mattr.size() > 0) 
+      engineBuilder.setMAttrs( vec_mattr );
+    engineBuilder.setEngineKind(llvm::EngineKind::JIT);
+    engineBuilder.setOptLevel(llvm::CodeGenOpt::Aggressive);
+    engineBuilder.setErrorStr(&mcjit_error);
+    llvm::TargetOptions targetOptions;
+    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+    engineBuilder.setTargetOptions( targetOptions );
+    TheExecutionEngine = engineBuilder.setUseMCJIT(true).create(); // MCJIT
+    targetMachine = engineBuilder.selectTarget();
+
     mainFunc = Mod->getFunction("main");
-    llvm::Function *mainFunc_extern = Mod->getFunction("main_extern");
-    //
+    mainFunc_extern = Mod->getFunction("main_extern");
 #endif
+
+
+    if (llvm_debug::debug_func_write_gen) {
+      if (Layout::primaryNode()) {
+	std::string str;
+
+	llvm::raw_string_ostream rss(str);
+	Mod->print(rss,new llvm::AssemblyAnnotationWriter());
+
+	char* fname = new char[100];
+	sprintf(fname,"module_XXXXXX");
+	mkstemp(fname);
+	QDPIO::cerr << "Generated module: " << fname << "\n";
+
+	// size_t start_pos = str.find("main");
+	// if(start_pos == std::string::npos)
+	//   QDP_error_exit("main not found in IR");
+	// str.replace(start_pos, 4, fname);
+
+	str.insert(0,llvm_debug::name_additional);
+	str.insert(0,llvm_debug::name_pretty);
+	str.insert(0,";");
+
+	ofstream myfile;
+	myfile.open (fname);
+	myfile << str;
+	myfile.close();
+
+	delete[] fname;
+      }
+    }
+
 
     if (llvm_debug::debug_func_dump) {
       if (Layout::primaryNode()) {
@@ -1272,24 +1358,38 @@ namespace QDP {
       //functionPassManager->add(llvm::createVerifierPass(llvm::PrintMessageAction));
       targetMachine->addAnalysisPasses(*functionPassManager);
       functionPassManager->add(new llvm::TargetLibraryInfo(llvm::Triple(Mod->getTargetTriple())));
+#ifdef USE_LLVM_34
+      //functionPassManager->add(new llvm::DataLayout(Mod));
+#else
       functionPassManager->add(new llvm::DataLayoutPass(Mod));
+#endif
       functionPassManager->add(llvm::createBasicAliasAnalysisPass());
-      functionPassManager->add(llvm::createLICMPass());
-      functionPassManager->add(llvm::createGVNPass());
-      functionPassManager->add(llvm::createPromoteMemoryToRegisterPass());
-      functionPassManager->add(llvm::createLoopVectorizePass());
-      functionPassManager->add(llvm::createEarlyCSEPass());
+      //functionPassManager->add(llvm::createLICMPass());
+      //functionPassManager->add(llvm::createGVNPass());
+      //functionPassManager->add(llvm::createPromoteMemoryToRegisterPass());
+      //functionPassManager->add(llvm::createBBVectorizePass());
+      functionPassManager->add(llvm::createSLPVectorizerPass());
+      //functionPassManager->add(llvm::createLoopVectorizePass());
+      //functionPassManager->add(llvm::createEarlyCSEPass());
       functionPassManager->add(llvm::createInstructionCombiningPass());
-      functionPassManager->add(llvm::createCFGSimplificationPass());
-      functionPassManager->add(llvm::createSimpleLoopUnrollPass() );  // unroll the vectorized loop with trip count 1
-      functionPassManager->add(llvm::createCFGSimplificationPass());  // join BB of vectorized loop with header
-      functionPassManager->add(llvm::createGVNPass()); // eliminate redundant index instructions
-      functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32 
+      //functionPassManager->add(llvm::createCFGSimplificationPass());
+      //functionPassManager->add(llvm::createSimpleLoopUnrollPass() );  // unroll the vectorized loop with trip count 1
+      //functionPassManager->add(llvm::createCFGSimplificationPass());  // join BB of vectorized loop with header
+      //functionPassManager->add(llvm::createGVNPass()); // eliminate redundant index instructions
+      //functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32 
     }
     if (llvm_debug::debug_loop_vectorizer) {
       if (Layout::primaryNode()) {
 	llvm::DebugFlag = true;
 	llvm::setCurrentDebugType("loop-vectorize");
+	llvm::setCurrentDebugType("SLP-vectorize");
+      }
+    }
+    if (llvm_debug::debug_SLP_vectorizer) {
+      QDPIO::cout << "Setting debug flag on SLP vectorizer\n";
+      if (Layout::primaryNode()) {
+	llvm::DebugFlag = true;
+	llvm::setCurrentDebugType("SLP-vectorize");
       }
     }
 
@@ -1303,55 +1403,27 @@ namespace QDP {
       }
     }
 
-    if (llvm_debug::debug_func_write) {
-      if (Layout::primaryNode()) {
-	std::string str;
 
-	llvm::raw_string_ostream rss(str);
-	Mod->print(rss,new llvm::AssemblyAnnotationWriter());
-
-	char* fname = new char[100];
-	sprintf(fname,"module_XXXXXX");
-	mkstemp(fname);
-	QDPIO::cerr << fname << "\n";
-
-	size_t start_pos = str.find("main");
-	if(start_pos == std::string::npos)
-	  QDP_error_exit("main not found in IR");
-	str.replace(start_pos, 4, fname);
-
-	str.insert(0,llvm_debug::name_additional);
-	str.insert(0,llvm_debug::name_pretty);
-	str.insert(0,";");
-
-	ofstream myfile;
-	myfile.open (fname);
-	myfile << str;
-	myfile.close();
-
-	delete[] fname;
-      }
-    }
-
-#if 0
+#if 1
     // Write assembly
-    {
-      llvm::FunctionPassManager *functionPassManager = new llvm::FunctionPassManager(Mod);
-      llvm::PassManager PM;
+    if (llvm_debug::debug_func_asm) {
+      if (Layout::primaryNode()) {
+	llvm::FunctionPassManager *functionPassManager = new llvm::FunctionPassManager(Mod);
+	llvm::PassManager PM;
 
-      std::string str;
-      llvm::raw_string_ostream rsos(str);
-      llvm::formatted_raw_ostream FOS(rsos);
+	std::string str;
+	llvm::raw_string_ostream rsos(str);
+	llvm::formatted_raw_ostream FOS(rsos);
 
-      if (targetMachine->addPassesToEmitFile( PM , FOS , llvm::TargetMachine::CGFT_AssemblyFile ) ) {
-	std::cout << "addPassesToEmitFile failed\n";
-        exit(1);
+	if (targetMachine->addPassesToEmitFile( PM , FOS , llvm::TargetMachine::CGFT_AssemblyFile ) ) {
+	  QDP_error_exit("addPassesToEmitFile failed");
+	}
+	PM.run(*Mod);
+	FOS.flush();
+	QDPIO::cout << "Assembly:\n";
+	QDPIO::cout << str << "\n";
+	QDPIO::cout << "end assembly!\n";
       }
-      PM.run(*Mod);
-      FOS.flush();
-      std::cerr << "Assembly:\n";
-      std::cerr << str << "\n";
-      std::cerr << "end assembly!\n";
     }
 #endif
 
@@ -1391,11 +1463,11 @@ namespace QDP {
     std::vector< llvm::Type* > vecArgs;
 
     // Push front lo,hi,myId
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
-    vecArgs.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext())  ); // ordered
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
+    // vecArgs.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext())  ); // ordered
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
     vecArgs.push_back( llvm::PointerType::get( 
 					       llvm::ArrayType::get( llvm::Type::getInt8Ty(llvm::getGlobalContext()) , 
 								     8 ) , 0  ) );
@@ -1405,7 +1477,7 @@ namespace QDP {
 			       llvm::ArrayRef<llvm::Type*>( vecArgs.data() , vecArgs.size() ) , 
 			       false); // no vararg
 
-    llvm::Function *mainFunc_extern = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main_extern", Mod);
+    mainFunc_extern = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main_extern", Mod);
 
     std::vector<llvm::Value*> vecCallArgument;
 
@@ -1414,25 +1486,25 @@ namespace QDP {
 
     llvm::Function::arg_iterator AI = mainFunc_extern->arg_begin();
 
-    AI->setName( "lo" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "lo" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "hi" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "hi" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "myId" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "myId" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "ordered" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "ordered" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "start" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "start" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
     AI->setName( "arg_ptr" );
 
@@ -1469,7 +1541,7 @@ namespace QDP {
     builder->CreateCall( mainFunc , llvm::ArrayRef<llvm::Value*>( vecCallArgument.data() , vecCallArgument.size() ) );
     builder->CreateRetVoid();
 
-    //mainFunc_extern->dump();
+    mainFunc_extern->dump();
 #endif
     
     if (llvm_debug::debug_func_build) {
@@ -1481,6 +1553,39 @@ namespace QDP {
       QDPIO::cerr << "    finalizing the module\n";
       //Mod->dump();
     }
+
+
+    if (llvm_debug::debug_func_write_opt) {
+      if (Layout::primaryNode()) {
+	std::string str;
+
+	llvm::raw_string_ostream rss(str);
+	Mod->print(rss,new llvm::AssemblyAnnotationWriter());
+
+	char* fname = new char[100];
+	sprintf(fname,"module_XXXXXX");
+	mkstemp(fname);
+	QDPIO::cerr << "Optimized module: " << fname << "\n";
+
+	// size_t start_pos = str.find("main");
+	// if(start_pos == std::string::npos)
+	//   QDP_error_exit("main not found in IR");
+	// str.replace(start_pos, 4, fname);
+
+	str.insert(0,llvm_debug::name_additional);
+	str.insert(0,llvm_debug::name_pretty);
+	str.insert(0,";");
+
+	ofstream myfile;
+	myfile.open (fname);
+	myfile << str;
+	myfile.close();
+
+	delete[] fname;
+      }
+    }
+
+
 
     TheExecutionEngine->finalizeObject();  // MCJIT
 

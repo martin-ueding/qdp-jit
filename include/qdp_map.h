@@ -296,8 +296,8 @@ struct ForEach<UnaryNode<FnMapJIT, A>, ViewLeaf, OpCombine>
     inline
     static Type_t apply(const UnaryNode<FnMapJIT, A>& expr, const ViewLeaf &v, const OpCombine &o)
     {
-      //assert(!"ni");
-#if 1
+      assert(!"ni");
+#if 0
       Type_t ret;
       Type_t ret_phi0;
       Type_t ret_phi1;

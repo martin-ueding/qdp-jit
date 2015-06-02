@@ -52,7 +52,8 @@ namespace QDP {
       partial_offset = args;
       for (int i = 0 ; i < N ; i++ ) {
 	IndexDomainVector args_curry = args;
-	args_curry.push_back( make_pair( N , llvm_create_value(i) ) );
+	args_curry.push_back( make_pair( N , i ) );
+	//args_curry.push_back( make_pair( N , llvm_create_value(i) ) );
 	F[i].setup( m_base , lay , args_curry );
       }
       setup_m = true;
@@ -71,12 +72,16 @@ namespace QDP {
 
 
     T getJitElem( llvm::Value * index ) {
+      assert( 0 && "ni");
+#if 0
       assert(setup_m);
       T ret;
       IndexDomainVector args = partial_offset;
       args.push_back( make_pair( N , index ) );
       ret.setup( m_base , layout , args );
       return ret;
+#endif
+      return T();
 #if 0
       T ret;
       ret.setup( r_base , 
@@ -88,6 +93,8 @@ namespace QDP {
 
 
     typename REGType<T>::Type_t getRegElem( llvm::Value * index ) {
+      assert( 0 && "ni");
+#if 0
       T jit;
       IndexDomainVector args = partial_offset;
       args.push_back( make_pair( N , index ) );
@@ -95,6 +102,8 @@ namespace QDP {
       typename REGType<T>::Type_t ret_reg;
       ret_reg.setup( jit );
       return ret_reg;
+#endif
+      return REGType<T>::Type_t();
 #if 0
       QDP_error_exit("getRegElem ni");
       llvm::Value * ws = llvm_create_value( sizeof(typename WordType<T>::Type_t) );

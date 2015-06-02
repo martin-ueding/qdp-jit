@@ -325,25 +325,6 @@ namespace QDP {
 				setProgramProfileLevel(lev);
 			}
 #endif
-			else if (strcmp((*argv)[i], "-inner")==0) 
-			{
-				int inner;
-				sscanf((*argv)[++i], "%d", &inner);
-				setDataLayoutInnerSize(inner);
-			}
-			else if (strcmp((*argv)[i], "-layout")==0) 
-			{
-			  char tmp[1024];
-			  sscanf((*argv)[++i], "%s", &tmp);
-			  int pos_o = (int)(strchr(tmp,'o') - tmp);
-			  int pos_s = (int)(strchr(tmp,'s') - tmp);
-			  int pos_c = (int)(strchr(tmp,'c') - tmp);
-			  int pos_r = (int)(strchr(tmp,'r') - tmp);
-			  int pos_i = (int)(strchr(tmp,'i') - tmp);
-			  assert( pos_o + pos_s + pos_c + pos_r + pos_i == 10 );
-			  QDP_set_jit_datalayout(pos_o, pos_s, pos_c, pos_r, pos_i);
-			  jit_layout_set=true;
-			}
 			else if (strcmp((*argv)[i], "-threads")==0) 
 			{
 				int threads;
@@ -418,10 +399,6 @@ namespace QDP {
 			}
 		}
 		
-		if (!jit_layout_set) {
-		  QDP_set_jit_datalayout(0,1,2,3,4);
-		}
-
 		QMP_verbose (QMP_verboseP);
 		
 #if QDP_DEBUG >= 1
@@ -432,7 +409,7 @@ namespace QDP {
 
 		QDP_initialize_QMP(argc, argv);
 		
-		QDP_print_jit_datalayout();
+		//QDP_print_jit_datalayout();
 	}
 
 

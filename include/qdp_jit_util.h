@@ -17,7 +17,7 @@ namespace QDP {
   llvm::Value * llvm_seedToFloat( llvm::Value* a0,llvm::Value* a1,llvm::Value* a2,llvm::Value* a3);
 
 
-
+#if 0
   class JitMainLoop {
   private:
 
@@ -235,7 +235,7 @@ namespace QDP {
     bool done_preamble;
     bool do_siteperm;
   };
-
+#endif
 
 
   class JitFunction {

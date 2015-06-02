@@ -263,16 +263,16 @@ namespace QDP {
 
     // "-print-machineinstrs"
 
-    char * argument = new char[128];
-    sprintf( argument , "-vectorizer-min-trip-count=%d" , (int)getDataLayoutInnerSize() );
+    // char * argument = new char[128];
+    // sprintf( argument , "-vectorizer-min-trip-count=%d" , (int)getDataLayoutInnerSize() );
 
-    QDPIO::cerr << "Using inner lattice size of " << (int)getDataLayoutInnerSize() << "\n";
-    QDPIO::cerr << "Setting loop vectorizer minimum trip count to " << (int)getDataLayoutInnerSize() << "\n";
+    // QDPIO::cerr << "Using inner lattice size of " << (int)getDataLayoutInnerSize() << "\n";
+    // QDPIO::cerr << "Setting loop vectorizer minimum trip count to " << (int)getDataLayoutInnerSize() << "\n";
     
-    const char *SetTinyVectorThreshold[] = {"program",argument};
-    llvm::cl::ParseCommandLineOptions(2, SetTinyVectorThreshold);
+    // const char *SetTinyVectorThreshold[] = {"program",argument};
+    // llvm::cl::ParseCommandLineOptions(2, SetTinyVectorThreshold);
 
-    delete[] argument;
+    // delete[] argument;
 
     llvm::InitializeNativeTarget();
 
@@ -386,11 +386,11 @@ namespace QDP {
     std::vector<llvm::Type*> vecPT;
 
     // Push back lo,hi,myId
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
-    vecPT.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext()) );  // ordered
-    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
+    // vecPT.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext()) );  // ordered
+    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
 
     vecPT.insert( vecPT.end() , vecParamType.begin() , vecParamType.end() );
 
@@ -406,25 +406,25 @@ namespace QDP {
 
     llvm::Function::arg_iterator AI = mainFunc->arg_begin();
     llvm::Function::arg_iterator AE = mainFunc->arg_end();
-    AI->setName("lo"); 
-    r_arg_lo = AI; 
-    AI++;
+    // AI->setName("lo"); 
+    // r_arg_lo = AI; 
+    // AI++;
     
-    AI->setName("hi"); 
-    r_arg_hi = AI;
-    AI++;
+    // AI->setName("hi"); 
+    // r_arg_hi = AI;
+    // AI++;
     
-    AI->setName("myId"); 
-    r_arg_myId = AI;
-    AI++;
+    // AI->setName("myId"); 
+    // r_arg_myId = AI;
+    // AI++;
 
-    AI->setName("ordered");
-    r_arg_ordered = AI;
-    AI++;
+    // AI->setName("ordered");
+    // r_arg_ordered = AI;
+    // AI++;
 
-    AI->setName("start"); 
-    r_arg_start = AI;
-    AI++;
+    // AI->setName("start"); 
+    // r_arg_start = AI;
+    // AI++;
 
     unsigned Idx = 0;
     for ( ; AI != AE ; ++AI, ++Idx) {
@@ -1027,211 +1027,6 @@ namespace QDP {
 #endif
 
 
-#if 0
-  std::string get_PTX_from_Module_using_nvvm( llvm::Module *Mod )
-  {
-    Mod->setDataLayout("e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:64");
-
-    llvm::PassManager PMTM;
-#if 0
-    // Add the target data from the target machine, if it exists, or the module.
-    if (const DataLayout *TD = Target.getDataLayout()) {
-      QDP_info_primary( "Using targets's data layout" );
-      PMTM.add(new DataLayout(*TD));
-    }
-    else {
-      QDP_info_primary( "Using module's data layout" );
-      PMTM.add(new DataLayout(Mod));
-    }
-#else
-    QDP_info_primary( "Using module's data layout" );
-    PMTM.add(new llvm::DataLayout(Mod));
-#endif
-    QDP_info_primary("Adding data layout");
-    PMTM.run(*Mod);
-
-#if 1
-    std::string str;
-    llvm::raw_string_ostream rsos(str);
-    llvm::formatted_raw_ostream fros(rsos);
-
-    Mod->print(fros,NULL);
-
-    // std::cout << "Do we need the ostream in binary mode?\n";
-    // llvm::WriteBitcodeToFile(Mod,fros);
-    fros.flush();
-
-    find_attr(str);
-    for (mapAttrIter=mapAttr.begin(); mapAttrIter!=mapAttr.end(); ++mapAttrIter)
-      str_replace(str, mapAttrIter->first, mapAttrIter->second );
-
-    str_replace( str , "!nvvm.internalize.after.link = !{}" , "" );
-#endif
-
-
-#if 0
-    std::string error;
-    unsigned OpenFlags = 0;
-    OpenFlags |= llvm::raw_fd_ostream::F_Binary;
-    std::unique_ptr<llvm::tool_output_file> Out( new llvm::tool_output_file( "test.bc" , error, OpenFlags) );
-    if (!Out) {
-      llvm::errs() << "Could not create std::unique_ptr<tool_output_file>\n";
-      exit(1);
-    }
-    llvm::formatted_raw_ostream fros(Out->os());
-    llvm::WriteBitcodeToFile(Mod,fros);
-    fros.flush();
-    // open the file:
-    std::streampos fileSize;
-    std::ifstream file("test.bc", std::ios::binary);
-    // get its size:
-    file.seekg(0, std::ios::end);
-    fileSize = file.tellg();
-    file.seekg(0, std::ios::beg);
-    // read the data:
-    std::vector<char> buffer(fileSize);
-    file.read((char*) &buffer[0], fileSize);
-    file.close();
-#endif
-
-
-#if 0
-    std::ifstream input( "test.bc", std::ios::binary );
-    // copies all data into buffer
-    std::vector<unsigned char> buffer( std::istreambuf_iterator<unsigned char>(input) ,  
-				       std::istreambuf_iterator<unsigned char>() );
-#endif
-
-    //exit(1);
-
-    std::cout << str << "\n";
-
-    nvvmResult result;
-    nvvmProgram program;
-    size_t PTXSize;
-    char *PTX = NULL;
-
-    result = nvvmCreateProgram(&program);
-    if (result != NVVM_SUCCESS) {
-      fprintf(stderr, "nvvmCreateProgram: Failed\n");
-      exit(1); 
-    }
-
-    result = nvvmAddModuleToProgram(program, str.c_str() , str.size() , "module" );
-    //result = nvvmAddModuleToProgram(program, (const char*)buffer.data() , buffer.size() , "module" );
-    if (result != NVVM_SUCCESS) {
-        fprintf(stderr, "nvvmAddModuleToProgram: Failed\n");
-        exit(-1);
-    }
-
-    std::stringstream ss;
-    ss << "-arch=compute_" << DeviceParams::Instance().getMajor() << DeviceParams::Instance().getMinor();
-
-    std::string sm_str = ss.str();
-
-    const char * arch = sm_str.c_str();
-    const char * opt_val[] = {arch};
-
-    result = nvvmCompileProgram(program,  1, opt_val );
-    if (result != NVVM_SUCCESS) {
-        char *Msg = NULL;
-        size_t LogSize;
-        fprintf(stderr, "nvvmCompileProgram: Failed\n");
-        nvvmGetProgramLogSize(program, &LogSize);
-        Msg = (char*)malloc(LogSize);
-        nvvmGetProgramLog(program, Msg);
-        fprintf(stderr, "%s\n", Msg);
-        free(Msg);
-        exit(-1);
-    }
-    
-    result = nvvmGetCompiledResultSize(program, &PTXSize);
-    if (result != NVVM_SUCCESS) {
-        fprintf(stderr, "nvvmGetCompiledResultSize: Failed\n");
-        exit(-1);
-    }
-    
-    PTX = (char*)malloc(PTXSize);
-    result = nvvmGetCompiledResult(program, PTX);
-    if (result != NVVM_SUCCESS) {
-        fprintf(stderr, "nvvmGetCompiledResult: Failed\n");
-        free(PTX);
-        exit(-1);
-    }
-    
-    result = nvvmDestroyProgram(&program);
-    if (result != NVVM_SUCCESS) {
-      fprintf(stderr, "nvvmDestroyProgram: Failed\n");
-      free(PTX);
-      exit(-1);
-    }
-
-    std::string ret(PTX);
-    std::cout << ret << "\n";
-
-    return ret;
-    //
-  }
-#endif
-
-
-
-
-#if 0
-  std::string llvm_get_ptx_kernel(const char* fname)
-  {
-    QDP_info_primary("Internalizing module");
-
-    const char *ExportList[] = { "main" };
-
-    llvm::StringMap<int> Mapping;
-    Mapping["__CUDA_FTZ"] = 0;
-
-    std::string banner;
-
-    llvm::PassManager OurPM;
-    OurPM.add( llvm::createInternalizePass( llvm::ArrayRef<const char *>(ExportList, 1)));
-    OurPM.add( llvm::createNVVMReflectPass(Mapping));
-    OurPM.run( *Mod );
-
-
-    QDP_info_primary("Running optimization passes on module");
-
-    llvm::PassManager PM;
-    PM.add( llvm::createGlobalDCEPass() );
-    PM.run( *Mod );
-
-    llvm_print_module(Mod,"ir_internalized_reflected_globalDCE.ll");
-
-    std::string str = get_PTX_from_Module_using_nvvm( Mod );
-
-#if 1
-    // Write PTX string to file
-    std::ofstream ptxfile;
-    ptxfile.open ( fname );
-    ptxfile << str << "\n";
-    ptxfile.close();
-#endif
-
-
-#if 0
-    // Read PTX string from file
-    std::ifstream ptxfile(fname);
-    std::stringstream buffer;
-    buffer << ptxfile.rdbuf();
-    ptxfile.close();
-    str = buffer.str();
-#endif
-
-    //llvm::outs() << str << "\n";
-
-    return str;
-  }
-#endif
-
-
-
-
   void * llvm_get_function(const char* fname)
   {
     assert(function_created && "Function not created");
@@ -1284,7 +1079,7 @@ namespace QDP {
       functionPassManager->add(llvm::createSimpleLoopUnrollPass() );  // unroll the vectorized loop with trip count 1
       functionPassManager->add(llvm::createCFGSimplificationPass());  // join BB of vectorized loop with header
       functionPassManager->add(llvm::createGVNPass()); // eliminate redundant index instructions
-      functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32 
+      //functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32 
     }
     if (llvm_debug::debug_loop_vectorizer) {
       if (Layout::primaryNode()) {
@@ -1391,11 +1186,11 @@ namespace QDP {
     std::vector< llvm::Type* > vecArgs;
 
     // Push front lo,hi,myId
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
-    vecArgs.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext())  ); // ordered
-    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
+    // vecArgs.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext())  ); // ordered
+    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
     vecArgs.push_back( llvm::PointerType::get( 
 					       llvm::ArrayType::get( llvm::Type::getInt8Ty(llvm::getGlobalContext()) , 
 								     8 ) , 0  ) );
@@ -1414,25 +1209,25 @@ namespace QDP {
 
     llvm::Function::arg_iterator AI = mainFunc_extern->arg_begin();
 
-    AI->setName( "lo" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "lo" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "hi" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "hi" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "myId" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "myId" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "ordered" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "ordered" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
-    AI->setName( "start" );
-    vecCallArgument.push_back( AI );
-    AI++;
+    // AI->setName( "start" );
+    // vecCallArgument.push_back( AI );
+    // AI++;
 
     AI->setName( "arg_ptr" );
 

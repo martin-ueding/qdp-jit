@@ -13,33 +13,34 @@ namespace QDP {
     omp_set_num_threads(n);
   }
 
-  void jit_dispatch( void* function , int site_count, int inner, bool ordered, int64_t start, const AddressLeaf& args)
+  void jit_dispatch( void* function , const AddressLeaf& args)
   {
-    if (site_count == 0)
-      return;
+    // void (*FP)(int64_t,int64_t,int64_t,bool,int64_t,void*) = 
+    //   (void (*)(int64_t,int64_t,int64_t,bool,int64_t,void*))(intptr_t)function;
 
-    void (*FP)(int64_t,int64_t,int64_t,bool,int64_t,void*) = 
-      (void (*)(int64_t,int64_t,int64_t,bool,int64_t,void*))(intptr_t)function;
-    
-    int threads_num;
-    int64_t myId;
-    int64_t lo = 0;
-    int64_t hi = site_count;
+    void (*FP)(void*) = (void (*)(void*))(intptr_t)function;
+
+    // int threads_num;
+    // int64_t myId;
+    // int64_t lo = 0;
+    // int64_t hi = site_count;
     void * addr = args.addr.data();
 
     //QDPIO::cerr << "dispatch...\n";
 
-#pragma omp parallel shared(site_count, threads_num, ordered, start, addr) private(myId, lo, hi) default(shared)
-    {
-      threads_num = omp_get_num_threads();
-      myId = omp_get_thread_num();
-      lo = ((site_count/inner)*myId/threads_num)*inner;
-      hi = ((site_count/inner)*(myId+1)/threads_num)*inner;
+    // #pragma omp parallel shared(site_count, threads_num, ordered, start, addr) private(myId, lo, hi) default(shared)
+    //     {
+    //       threads_num = omp_get_num_threads();
+    //       myId = omp_get_thread_num();
+    //       lo = ((site_count/inner)*myId/threads_num)*inner;
+    //       hi = ((site_count/inner)*(myId+1)/threads_num)*inner;
 
-      //std::cout << "dispatch: " << lo << " " << hi << " " << myId << " " << ordered << " " << start << "\n";
+    //std::cout << "dispatch: " << lo << " " << hi << " " << myId << " " << ordered << " " << start << "\n";
 
-      FP( lo , hi , myId , ordered, start, addr );
-    }
+    //FP( lo , hi , myId , ordered, start, addr );
+    FP( addr );
+
+    //    }
 
     //QDPIO::cerr << "         (returned)\n";
   }

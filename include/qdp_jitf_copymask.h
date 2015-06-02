@@ -9,6 +9,9 @@ namespace QDP {
   void
   function_copymask_build( JitFunction& func, OLattice<T>& dest , const OLattice<T1>& mask , const OLattice<T>& src )
   {
+    assert( 0 && "ni");
+#if 0
+
     JitMainLoop loop;
 
     ParamLeaf param_leaf;
@@ -35,6 +38,7 @@ namespace QDP {
     loop.done();
 
     func.func().push_back( jit_function_epilogue_get("jit_copymask.ptx") );
+#endif
   }
 
 
@@ -55,7 +59,8 @@ namespace QDP {
     std::cout << "calling copymask(Lattice)..\n";
 #endif
 
-    jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
+    assert( 0 && "ni");
+    //jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
   }
 
 }

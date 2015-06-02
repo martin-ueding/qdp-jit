@@ -156,7 +156,7 @@ namespace QDP
   template<class T> void function_layout_to_native_build( JitFunction& function, const OLattice<T>& dest );
   template<class T> void function_layout_to_native_exec( const JitFunction& function, T *dest, T *src );
 
-  typedef std::pair< int , llvm::Value * > IndexDomain;
+  typedef std::pair< int , int > IndexDomain;
   typedef std::vector< IndexDomain >     IndexDomainVector;
 
   llvm::Value * datalayout( JitDeviceLayout::LayoutEnum  lay , IndexDomainVector a );

@@ -9,6 +9,8 @@ namespace QDP {
   void 
   function_layout_to_jit_build( JitFunction& func, const OLattice<T>& dest )
   {
+    assert( 0 && "ni");
+#if 0
     JitMainLoop loop;
 
     ParamLeaf param_leaf;
@@ -32,6 +34,7 @@ namespace QDP {
     //QDPIO::cerr << "functionlayout_to_jit_build\n";
 
     func.func().push_back( jit_function_epilogue_get("jit_layout.ptx") );
+#endif
   }
 
 
@@ -49,7 +52,8 @@ namespace QDP {
 
     QDPIO::cerr << "calling layout(to JIT)..\n";
 
-    jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
+    assert( 0 && "ni");
+    //jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
   }
 
 
@@ -65,6 +69,8 @@ namespace QDP {
   void 
   function_layout_to_native_build( JitFunction& func, const OLattice<T>& dest )
   {
+    assert( !"ni");
+#if 0
     JitMainLoop loop;
 
     ParamLeaf param_leaf;
@@ -88,6 +94,7 @@ namespace QDP {
     //QDPIO::cerr << "functionlayout_to_native_build\n";
 
     func.func().push_back( jit_function_epilogue_get("jit_layout.ptx") );
+#endif
   }
 
 
@@ -105,7 +112,8 @@ namespace QDP {
 
     QDPIO::cerr << "calling layout(to native)..\n";
 
-    jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
+    assert( 0 && "ni");
+    //jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
   }
 
 }

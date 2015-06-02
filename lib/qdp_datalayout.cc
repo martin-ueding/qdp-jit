@@ -9,93 +9,23 @@ namespace QDP {
   // as used for the coalesced memory accesses.
 
 
-  namespace DataLayout {
-    int64_t inner = 1;
-  }
-
-  int64_t getDataLayoutInnerSize() {
-    return DataLayout::inner;
-  }
-
-  void setDataLayoutInnerSize( int64_t i ) {
-    DataLayout::inner = i;
-  }
-
-
-  IndexDomainVector get_index_vector_from_index( llvm::Value *index )
-  {
-    //std::cout << "Using inner length = " << DataLayout::inner << "\n";
-
-    llvm::Value * inner = llvm_create_value( DataLayout::inner );
-    llvm::Value * iv_div_inner = llvm_div( index , inner );   // outer
-    llvm::Value * iv_mod_inner = llvm_rem( index , inner );   // inner
-
-    IndexDomainVector args;
-    args.push_back( make_pair( Layout::sitesOnNode()/DataLayout::inner , iv_div_inner ) );
-    args.push_back( make_pair( DataLayout::inner , iv_mod_inner ) );
-
-    return args;
-  }
-
-
-  IndexDomainVector get_scalar_index_vector_from_index( llvm::Value *index )
-  {
-    //std::cout << "Using inner length = " << DataLayout::inner << "\n";
-
-    IndexDomainVector args;
-    args.push_back( make_pair( Layout::sitesOnNode() , index ) );
-    args.push_back( make_pair( 1 , llvm_create_value(0) ) );
-
-    return args;
-  }
-
-
-  llvm::Value *get_index_from_index_vector( const IndexDomainVector& idx ) {
-    assert( idx.size() >= 2 );
-
-    const size_t nIvo = 0; // volume outer
-    const size_t nIvi = 1; // volume inner
-
-    int         Lvo,Lvi;
-    llvm::Value *ivo,*ivi;
-
-    Lvo = idx.at(nIvo).first;
-    ivo = idx.at(nIvo).second;
-
-    Lvi = idx.at(nIvi).first;
-    ivi = idx.at(nIvi).second;
-
-    llvm::Value * Ivo = llvm_create_value(Lvo);
-    llvm::Value * Ivi = llvm_create_value(Lvi);
-
-    llvm::Value * iv = llvm_add(llvm_mul( ivo , Ivi ) , ivi ); // reconstruct volume index
-
-    return iv;
-  }
-
-
-  std::array<int,5> QDP_jit_layout;
-
-  void QDP_set_jit_datalayout(int pos_o, int pos_s, int pos_c, int pos_r, int pos_i) {
-    QDP_jit_layout[pos_o] = 0;
-    QDP_jit_layout[pos_s] = 1;
-    QDP_jit_layout[pos_c] = 2;
-    QDP_jit_layout[pos_r] = 3;
-    QDP_jit_layout[pos_i] = 4;
-  }
-
-  void QDP_print_jit_datalayout() {
-    const char* letters="oscri";
-    QDPIO::cerr << "Using JIT data layout ";
-    QDPIO::cerr << letters[ QDP_jit_layout[0] ];
-    QDPIO::cerr << letters[ QDP_jit_layout[1] ];
-    QDPIO::cerr << letters[ QDP_jit_layout[2] ];
-    QDPIO::cerr << letters[ QDP_jit_layout[3] ];
-    QDPIO::cerr << letters[ QDP_jit_layout[4] ];
-    QDPIO::cerr << "\n";
-  }
-
 #if 1
+  llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
+    assert( a.size() == 7 && "IndexDomainVector size not 7" );
+
+    std::size_t ret = 0;
+    for( IndexDomainVector::reverse_iterator x = a.rbegin() ; x != a.rend() ; x++ ) {
+      int domain = x->first;
+      int index  = x->second;
+      ret *= domain;
+      ret += index;
+    }
+    return llvm_create_value( ret );
+  }
+#endif
+
+
+#if 0
   llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
     if ( a.size() == 5 ) {
       const size_t nIvo = 0; // volume outer

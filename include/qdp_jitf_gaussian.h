@@ -9,6 +9,9 @@ template<class T>
 void 
 function_gaussian_build( JitFunction& func, OLattice<T>& dest ,OLattice<T>& r1 ,OLattice<T>& r2 )
 {
+  assert( 0 && "ni");
+#if 0
+
   JitMainLoop loop;
 
   ParamLeaf param_leaf;
@@ -33,6 +36,7 @@ function_gaussian_build( JitFunction& func, OLattice<T>& dest ,OLattice<T>& r1 ,
   loop.done();
 
   func.func().push_back( jit_function_epilogue_get("jit_gaussian.ptx") );
+#endif
 }
 
 
@@ -52,7 +56,9 @@ function_gaussian_exec(const JitFunction& function, OLattice<T>& dest,OLattice<T
     QDP_error_exit("number of sites in ordered subset is %d, but inner length is %d" , 
 		   s.numSiteTable() , getDataLayoutInnerSize());
 
-  jit_dispatch(function.func().at(0),s.numSiteTable(),getDataLayoutInnerSize(),s.hasOrderedRep(),s.start(),addr_leaf);
+  assert( 0 && "ni");
+  jit_dispatch( function.func().at(0) , addr_leaf );
+  //jit_dispatch(function.func().at(0),s.numSiteTable(),getDataLayoutInnerSize(),s.hasOrderedRep(),s.start(),addr_leaf);
 }
 
 

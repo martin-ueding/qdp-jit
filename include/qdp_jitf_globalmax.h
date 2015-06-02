@@ -8,6 +8,9 @@ template<class T>
 void 
 function_global_max_build( JitFunction& func, const OLattice<T>& src)
 {
+  assert( 0 && "ni");
+#if 0
+    
 #ifdef LLVM_DEBUG
   std::cout << __PRETTY_FUNCTION__ << "\n";
 #endif
@@ -46,6 +49,7 @@ function_global_max_build( JitFunction& func, const OLattice<T>& src)
   loop.done();
 
   func.func().push_back( jit_function_epilogue_get("jit_globalmax.ptx") );
+#endif
 }
 
 
@@ -93,7 +97,9 @@ function_global_max_exec(const JitFunction& function, typename UnaryReturn<OLatt
   std::cout << "calling globalMax(Lattice).. " << addr_leaf.addr.size() << "\n";
 #endif
 
-  jit_dispatch( function.func().at(0) , s.numSiteTable() , getDataLayoutInnerSize() , s.hasOrderedRep() , s.start() , addr_leaf );
+  assert( 0 && "ni");
+  jit_dispatch( function.func().at(0) , addr_leaf );
+  //jit_dispatch( function.func().at(0) , s.numSiteTable() , getDataLayoutInnerSize() , s.hasOrderedRep() , s.start() , addr_leaf );
 
   ret.elem() = dest[0];
   for( int i = 1 ; i < qdpNumThreads() ; ++i )

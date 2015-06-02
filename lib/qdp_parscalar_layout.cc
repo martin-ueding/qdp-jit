@@ -72,13 +72,22 @@ namespace QDP
 
 	  bool iogrid_defined;
       int  num_iogrid;
-	  multi1d<int> iogrid;
+      multi1d<int> iogrid;
+
+      multi1d<int> logical_nodegeom;
 
 	} _layout;
 
 
     //-----------------------------------------------------
     // Functions
+
+
+    void jit_set_logical_nodegeom( const multi1d<int>& logical_nodegeom_ )
+    {
+      _layout.logical_nodegeom = logical_nodegeom_;
+    }
+
 
     //! Main destruction routine
     void destroy() {}
@@ -365,6 +374,12 @@ namespace QDP
 #endif
       // Initialize various defaults
       initDefaults();
+
+
+      for(int j=0; j < Nd; j++)
+	if (_layout.subgrid_nrow[j] % _layout.logical_nodegeom[j] != 0) {
+	  QDP_error_exit("Node geometry coordinate number %d not compatible with node volume extent.",j);
+	}
 
       QDPIO::cout << "Finished lattice layout" << endl;
 

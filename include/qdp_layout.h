@@ -124,6 +124,7 @@ namespace Layout
   //! Get the I/O Node grid
   const multi1d<int>& getIONodeGrid() QDP_CONST;
 
+  void jit_set_logical_nodegeom( const multi1d<int>& logical_nodegeom_ );
 
 }
 

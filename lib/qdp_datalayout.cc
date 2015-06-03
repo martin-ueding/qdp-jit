@@ -9,7 +9,51 @@ namespace QDP {
   // as used for the coalesced memory accesses.
 
 
+  int jit_local_site(const std::array<int,Nd>& coord, const multi1d<int>& latt_size)
+  {
+    int order = 0;
+
+    for(int mmu=latt_size.size()-1; mmu >= 1; --mmu)
+      order = latt_size[mmu-1]*(coord[mmu] + order);
+
+    order += coord[0];
+
+    return order;
+  }
+
+
+
 #if 1
+  //
+  // Datalayout which is SIMD friendly for shift operations
+  //
+  llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
+    assert( a.size() == 3+Nd && "IndexDomainVector size not 3+Nd" );
+
+    std::array<int,Nd> lc;  // coordinate within a subnode
+    std::array<int,Nd> sn;  // coordinate of the subnode
+
+    for(int i=0;i<Nd;++i) {
+      lc[i] = a[i].second % Layout::subnodeLattSize()[i];
+      sn[i] = a[i].second / Layout::subnodeLattSize()[i];
+      //      QDPIO::cout << coord[i] << " ";
+    }
+    //    QDPIO::cout << "\n";
+
+    int inner_idx = jit_local_site( sn , Layout::nodeGeom() );
+    int outer_idx = jit_local_site( lc , Layout::subnodeLattSize() );
+
+    int inner_domain = Layout::jit_get_number_of_subnodes_per_node();
+
+    int index = inner_domain * outer_idx + inner_idx;
+
+    return llvm_create_value( index );
+  }
+#endif
+
+
+
+#if 0
   llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
     assert( a.size() == 7 && "IndexDomainVector size not 7" );
 
@@ -228,6 +272,81 @@ namespace QDP {
     return offset;
   }
 #endif
+
+
+
+  std::vector< std::array<int,Nd> > jit_volume_loop;
+
+  std::array<int,Nd> volume_loop_linear_2_coord( int linear )
+  {
+    QDPIO::cout << linear << " " << jit_volume_loop.size() << "\n";
+    assert( linear < jit_volume_loop.size() );
+    assert( jit_volume_loop.size() > 0 );
+    return jit_volume_loop[linear];
+  }
+
+
+  bool lexico_percolate( std::array<int,Nd>& coord, const multi1d<int>& bounds )
+  {
+    bool ret=false;
+    for( int i = 0 ; i < Nd ; ++i )
+      if (coord[i] == bounds[i]) {
+	coord[i] = 0;
+	if ( i < Nd-1 )
+	  coord[i+1]++;
+	else {
+	  coord.fill(0);
+	  ret=true;
+	}
+      }
+    return ret;
+  }
+
+
+  void setup_nodevolume_loop_SIMD()
+  {
+    QDPIO::cout << "Setting up node volume loop, SIMD friendly version\n";
+    
+    std::array<int,Nd> lc;  // coordinate within a subnode
+    std::array<int,Nd> sn;  // coordinate of the subnode
+    lc.fill(0);
+    sn.fill(0);
+
+    jit_volume_loop.clear();
+    int vol(0);
+
+    do
+      {
+	if (lexico_percolate( sn , Layout::nodeGeom()) ) {
+	  lc[0]++;
+	  if (lexico_percolate( lc , Layout::subnodeLattSize() ))
+	    QDP_error_exit("Didn't expect the subnode coordinate to percolate.");
+	}
+
+	std::array<int,Nd> coord;
+
+	for(int i=0;i<Nd;++i) {
+	  coord[i] = sn[i] * Layout::subnodeLattSize()[i] + lc[i];
+	  QDPIO::cout << coord[i] << " ";
+	}
+	QDPIO::cout << "\n";
+
+	// Paranoic test
+	for (auto& s : jit_volume_loop)
+	  if ( s == coord )
+	    QDP_error_exit("Double coordinate");
+
+	jit_volume_loop.push_back( coord );
+
+	sn[0]++;
+	vol++;
+	//QDPIO::cout << vol << " " << Layout::sitesOnNode() << "\n";
+      } 
+    while (vol <= Layout::sitesOnNode()-1);
+
+    QDPIO::cout << "Done\n";  
+
+  } //
 
 
 } // namespace

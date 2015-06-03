@@ -33,22 +33,43 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
   typedef typename ForEach<QDPExpr<RHS,OLattice<T1> >, ParamLeaf, TreeCombine>::Type_t View_t;
   View_t rhs_view(forEach(rhs, param_leaf, TreeCombine()));
 
-  for ( int t = 0 ; t < Layout::subgridLattSize()[3] ; ++t ) {
-    for ( int z = 0 ; z < Layout::subgridLattSize()[2] ; ++z ) {
-      for ( int y = 0 ; y < Layout::subgridLattSize()[1] ; ++y ) {
-	for ( int x = 0 ; x < Layout::subgridLattSize()[0] ; ++x ) {
-	  IndexDomainVector idx;
+  for ( int j = 0 ; j < Nd ; ++j ) 
+    QDPIO::cout << "subnodeLattSize()[" << j << "] = " <<  Layout::subnodeLattSize()[j] << std::endl;
+  for ( int j = 0 ; j < Nd ; ++j ) 
+    QDPIO::cout << "nodeGeom()[" << j << "] = " <<  Layout::nodeGeom()[j] << std::endl;
 
-	  idx.push_back( make_pair( Layout::subgridLattSize()[0] , x ) );
-	  idx.push_back( make_pair( Layout::subgridLattSize()[1] , y ) );
-	  idx.push_back( make_pair( Layout::subgridLattSize()[2] , z ) );
-	  idx.push_back( make_pair( Layout::subgridLattSize()[3] , t ) );
+  for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-	  op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ),
-		  forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutCoalesced , idx ), OpCombine()));
-	}
-      }
-    }
+    std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+
+    IndexDomainVector idx;
+    for( int i = 0 ; i < Nd ; ++i )
+      idx.push_back( make_pair( Layout::subgridLattSize()[i] , coord[i] ) );
+
+  // for ( int lt = 0 ; lt < Layout::subnodeLattSize()[3] ; ++lt ) {
+  //   for ( int lz = 0 ; lz < Layout::subgridLattSize()[2] ; ++lz ) {
+  //     for ( int ly = 0 ; ly < Layout::subgridLattSize()[1] ; ++ly ) {
+  // 	for ( int lx = 0 ; lx < Layout::subgridLattSize()[0] ; ++lx ) {
+  // 	  for ( int snt = 0 ; snt < Layout::nodeGeom()[3] ; ++snt ) {
+  // 	    for ( int snz = 0 ; snz < Layout::nodeGeom()[2] ; ++snz ) {
+  // 	      for ( int sny = 0 ; sny < Layout::nodeGeom()[1] ; ++sny ) {
+  // 		for ( int snx = 0 ; snx < Layout::nodeGeom()[0] ; ++snx ) {
+  // 		  IndexDomainVector idx;
+
+  // 		  int x = snx * Layout::subnodeLattSize()[0] + lx;
+  // 		  int y = sny * Layout::subnodeLattSize()[1] + ly;
+  // 		  int z = snz * Layout::subnodeLattSize()[2] + lz;
+  // 		  int t = snt * Layout::subnodeLattSize()[3] + lt;
+
+		  // QDPIO::cout << x << " "  << y << " "  << z << " "  << t << std::endl;
+
+		  // idx.push_back( make_pair( Layout::subgridLattSize()[0] , x ) );
+		  // idx.push_back( make_pair( Layout::subgridLattSize()[1] , y ) );
+		  // idx.push_back( make_pair( Layout::subgridLattSize()[2] , z ) );
+		  // idx.push_back( make_pair( Layout::subgridLattSize()[3] , t ) );
+
+    op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ),
+	    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutCoalesced , idx ), OpCombine()));
   }
 
   func.func().push_back( jit_function_epilogue_get("jit_eval.ptx") );

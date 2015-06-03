@@ -27,7 +27,6 @@ namespace QDP {
   //! Private flag for status
   static bool isInit = false;
   bool setGeomP = false;
-  bool setNGeomP = false;
   bool setIOGeomP = false;
   multi1d<int> logical_geom(Nd);   // apriori logical geometry of the machine
   multi1d<int> logical_nodegeom(Nd);   // apriori logical geometry of the node
@@ -265,8 +264,8 @@ namespace QDP {
 		setGeomP = false;
 		logical_geom = 0;
 
-		setNGeomP = false;
-		logical_nodegeom = 0;
+		for (int i=0;i<Nd;++i)
+		  logical_nodegeom[i] = 1;
 		
 		setIOGeomP = false;
 		logical_iogeom = 0;
@@ -360,13 +359,15 @@ namespace QDP {
 			}
 			else if (strcmp((*argv)[i], "-nodegeom")==0) 
 			{
-				setNGeomP = true;
+			  std::cout << "nodegeom: ";
 				for(int j=0; j < Nd; j++) 
 				{
 					int uu;
 					sscanf((*argv)[++i], "%d", &uu);
 					logical_nodegeom[j] = uu;
+					std::cout << uu << " ";
 				}
+			  std::cout << "\n";
 			}
 			else if (strcmp((*argv)[i], "-iogeom")==0) 
 			{
@@ -461,10 +462,11 @@ namespace QDP {
 	      }
 
 
-	  if (setNGeomP) 
-	    {
-	      Layout::jit_set_logical_nodegeom(logical_nodegeom);
-	    }
+	  //
+	  // Always set the logical node geometry, i.e. the grid of subnodes with a node
+	  // 
+	  Layout::jit_set_logical_nodegeom(logical_nodegeom);
+
 
 		
 #if QDP_DEBUG >= 1

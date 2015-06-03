@@ -76,6 +76,11 @@ namespace QDP
 
       multi1d<int> logical_nodegeom;
 
+      //! grid of subnodes within a node
+      multi1d<int> subnode_nrow;
+
+      int number_of_subnodes_per_node;
+
 	} _layout;
 
 
@@ -86,7 +91,16 @@ namespace QDP
     void jit_set_logical_nodegeom( const multi1d<int>& logical_nodegeom_ )
     {
       _layout.logical_nodegeom = logical_nodegeom_;
+      _layout.number_of_subnodes_per_node = 1;
+      for(int i=0;i<Nd;++i)
+	_layout.number_of_subnodes_per_node *= _layout.logical_nodegeom[i];
     }
+
+    int jit_get_number_of_subnodes_per_node()
+    {
+      return _layout.number_of_subnodes_per_node;
+    }
+
 
 
     //! Main destruction routine
@@ -117,6 +131,12 @@ namespace QDP
 
     //! Subgrid (grid on each node) lattice size
     const multi1d<int>& subgridLattSize() {return _layout.subgrid_nrow;}
+
+    //! Geometry of subnodes within a node
+    const multi1d<int>& nodeGeom() {return _layout.logical_nodegeom;}
+
+    //! Grid of a subnode
+    const multi1d<int>& subnodeLattSize() {return _layout.subnode_nrow;}
 
     //! Returns the node number of this node
     int nodeNumber() {return _layout.node_rank;}
@@ -292,6 +312,7 @@ namespace QDP
       _layout.subgrid_nrow.resize(Nd);
       _layout.logical_coord.resize(Nd);
       _layout.logical_size.resize(Nd);
+      _layout.subnode_nrow.resize(Nd);
 
       _layout.subgrid_vol = 1;
 
@@ -376,10 +397,14 @@ namespace QDP
       initDefaults();
 
 
-      for(int j=0; j < Nd; j++)
+      for(int j=0; j < Nd; j++) {
 	if (_layout.subgrid_nrow[j] % _layout.logical_nodegeom[j] != 0) {
 	  QDP_error_exit("Node geometry coordinate number %d not compatible with node volume extent.",j);
 	}
+	_layout.subnode_nrow[j] = _layout.subgrid_nrow[j] / _layout.logical_nodegeom[j];
+      }
+
+      setup_nodevolume_loop_SIMD();
 
       QDPIO::cout << "Finished lattice layout" << endl;
 

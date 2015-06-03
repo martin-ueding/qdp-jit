@@ -100,6 +100,12 @@ namespace Layout
   //! Subgrid (grid on each node) lattice size
   const multi1d<int>& subgridLattSize() QDP_CONST;
 
+  //! Grid of a subnode
+  const multi1d<int>& subnodeLattSize() QDP_CONST;
+
+  //! Geometry of subnodes within a node
+  const multi1d<int>& nodeGeom() QDP_CONST;
+
   //! Returns the logical size of this machine
   const multi1d<int>& logicalSize() QDP_CONST;
 
@@ -125,6 +131,8 @@ namespace Layout
   const multi1d<int>& getIONodeGrid() QDP_CONST;
 
   void jit_set_logical_nodegeom( const multi1d<int>& logical_nodegeom_ );
+
+  int jit_get_number_of_subnodes_per_node();
 
 }
 

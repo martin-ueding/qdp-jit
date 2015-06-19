@@ -54,6 +54,7 @@ namespace QDP {
     bool debug_func_dump       = false;
     bool debug_func_write      = false;
     bool debug_loop_vectorizer = false;
+    bool debug_qdp_jit_roll    = false;
     std::string name_pretty;
     std::string name_additional;
   }
@@ -62,6 +63,10 @@ namespace QDP {
     std::string str(c_str);
     if (str.find("loop-vectorize") != string::npos) {
       llvm_debug::debug_loop_vectorizer = true;
+      return;
+    }
+    if (str.find("qdp_jit_roll") != string::npos) {
+      llvm_debug::debug_qdp_jit_roll = true;
       return;
     }
     if (str.find("function-builder") != string::npos) {
@@ -1072,13 +1077,15 @@ namespace QDP {
       functionPassManager->add(llvm::createLICMPass());
       functionPassManager->add(llvm::createGVNPass());
       functionPassManager->add(llvm::createPromoteMemoryToRegisterPass());
-      functionPassManager->add(llvm::createLoopVectorizePass());
-      functionPassManager->add(llvm::createEarlyCSEPass());
+      functionPassManager->add(llvm::createBBVectorizePass());
+      ////functionPassManager->add(llvm::createLoopVectorizePass());
+      //functionPassManager->add(llvm::create_qdp_jit_roll_pass());
+      //functionPassManager->add(llvm::createEarlyCSEPass());
       functionPassManager->add(llvm::createInstructionCombiningPass());
-      functionPassManager->add(llvm::createCFGSimplificationPass());
-      functionPassManager->add(llvm::createSimpleLoopUnrollPass() );  // unroll the vectorized loop with trip count 1
-      functionPassManager->add(llvm::createCFGSimplificationPass());  // join BB of vectorized loop with header
-      functionPassManager->add(llvm::createGVNPass()); // eliminate redundant index instructions
+      //functionPassManager->add(llvm::createCFGSimplificationPass());
+      //functionPassManager->add(llvm::createSimpleLoopUnrollPass() );  // unroll the vectorized loop with trip count 1
+      //functionPassManager->add(llvm::createCFGSimplificationPass());  // join BB of vectorized loop with header
+      //functionPassManager->add(llvm::createGVNPass()); // eliminate redundant index instructions
       //functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32 
     }
     if (llvm_debug::debug_loop_vectorizer) {
@@ -1087,14 +1094,20 @@ namespace QDP {
 	llvm::setCurrentDebugType("loop-vectorize");
       }
     }
+    if (llvm_debug::debug_qdp_jit_roll) {
+      if (Layout::primaryNode()) {
+	llvm::DebugFlag = true;
+	llvm::setCurrentDebugType("qdp_jit_roll");
+      }
+    }
 
     functionPassManager->run(*mainFunc);
 
     if (llvm_debug::debug_func_dump) {
       if (Layout::primaryNode()) {
 	QDPIO::cerr << "LLVM IR function (after passes)\n";
-	mainFunc->dump();
-	//Mod->dump();
+	//mainFunc->dump();
+	Mod->dump();
       }
     }
 
@@ -1283,6 +1296,8 @@ namespace QDP {
       QDPIO::cerr << "    JIT compiling ...\n";
     }
     fptr_mainFunc_extern = TheExecutionEngine->getPointerToFunction( mainFunc_extern );
+
+    Mod->dump();
 
     function_created = false;
     function_started = false;

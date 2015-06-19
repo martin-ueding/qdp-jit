@@ -45,9 +45,22 @@ namespace QDP {
 
     int inner_domain = Layout::jit_get_number_of_subnodes_per_node();
 
-    int index = inner_domain * outer_idx + inner_idx;
+    int space_time_index = inner_domain * outer_idx + inner_idx;
 
-    return llvm_create_value( index );
+
+    int order = 0;
+
+    for( int mmu = a.size() - 1 ; mmu >= Nd+1 ; --mmu ) {
+      order = a[mmu-1].first*(a[mmu].second + order);
+    }
+    order += a[Nd].second;
+
+    QDPIO::cout << "order: " << order << "    sti = " << space_time_index << "\n";
+
+    order = order * Layout::sitesOnNode() + space_time_index;
+
+
+    return llvm_create_value( order );
   }
 #endif
 

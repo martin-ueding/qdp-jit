@@ -18,12 +18,14 @@ namespace QDP {
     // void (*FP)(int64_t,int64_t,int64_t,bool,int64_t,void*) = 
     //   (void (*)(int64_t,int64_t,int64_t,bool,int64_t,void*))(intptr_t)function;
 
-    void (*FP)(void*) = (void (*)(void*))(intptr_t)function;
+    //void (*FP)(void*) = (void (*)(void*))(intptr_t)function;
+
+    void (*FP)(int64_t,int64_t,void*) = (void (*)(int64_t,int64_t,void*))(intptr_t)function;
 
     // int threads_num;
     // int64_t myId;
-    // int64_t lo = 0;
-    // int64_t hi = site_count;
+    int64_t lo = 0;
+    int64_t hi = Layout::sitesOnNode();
     void * addr = args.addr.data();
 
     //QDPIO::cerr << "dispatch...\n";
@@ -38,7 +40,8 @@ namespace QDP {
     //std::cout << "dispatch: " << lo << " " << hi << " " << myId << " " << ordered << " " << start << "\n";
 
     //FP( lo , hi , myId , ordered, start, addr );
-    FP( addr );
+    //FP( addr );
+    FP( lo, hi, addr );
 
     //    }
 

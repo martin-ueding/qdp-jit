@@ -391,8 +391,8 @@ namespace QDP {
     std::vector<llvm::Type*> vecPT;
 
     // Push back lo,hi,myId
-    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
-    // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
+    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
+    vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
     // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
     // vecPT.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext()) );  // ordered
     // vecPT.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
@@ -411,13 +411,13 @@ namespace QDP {
 
     llvm::Function::arg_iterator AI = mainFunc->arg_begin();
     llvm::Function::arg_iterator AE = mainFunc->arg_end();
-    // AI->setName("lo"); 
-    // r_arg_lo = AI; 
-    // AI++;
+    AI->setName("lo");
+    r_arg_lo = AI;
+    AI++;
     
-    // AI->setName("hi"); 
-    // r_arg_hi = AI;
-    // AI++;
+    AI->setName("hi");
+    r_arg_hi = AI;
+    AI++;
     
     // AI->setName("myId"); 
     // r_arg_myId = AI;
@@ -1074,10 +1074,11 @@ namespace QDP {
       functionPassManager->add(new llvm::TargetLibraryInfo(llvm::Triple(Mod->getTargetTriple())));
       functionPassManager->add(new llvm::DataLayoutPass());
       functionPassManager->add(llvm::createBasicAliasAnalysisPass());
-      functionPassManager->add(llvm::createLICMPass());
-      functionPassManager->add(llvm::createGVNPass());
-      functionPassManager->add(llvm::createPromoteMemoryToRegisterPass());
-      functionPassManager->add(llvm::createBBVectorizePass());
+      //functionPassManager->add(llvm::createLICMPass());
+      //functionPassManager->add(llvm::createGVNPass());
+      //functionPassManager->add(llvm::createPromoteMemoryToRegisterPass());
+      //functionPassManager->add(llvm::createBBVectorizePass());
+      functionPassManager->add(llvm::createSLPVectorizerPass());
       ////functionPassManager->add(llvm::createLoopVectorizePass());
       //functionPassManager->add(llvm::create_qdp_jit_roll_pass());
       //functionPassManager->add(llvm::createEarlyCSEPass());
@@ -1086,7 +1087,7 @@ namespace QDP {
       //functionPassManager->add(llvm::createSimpleLoopUnrollPass() );  // unroll the vectorized loop with trip count 1
       //functionPassManager->add(llvm::createCFGSimplificationPass());  // join BB of vectorized loop with header
       //functionPassManager->add(llvm::createGVNPass()); // eliminate redundant index instructions
-      //functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32 
+      //functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32
     }
     if (llvm_debug::debug_loop_vectorizer) {
       if (Layout::primaryNode()) {
@@ -1199,8 +1200,8 @@ namespace QDP {
     std::vector< llvm::Type* > vecArgs;
 
     // Push front lo,hi,myId
-    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
-    // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
+    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // lo
+    vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // hi
     // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // myId
     // vecArgs.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext())  ); // ordered
     // vecArgs.push_back( llvm::Type::getInt64Ty(llvm::getGlobalContext()) ); // start
@@ -1222,13 +1223,13 @@ namespace QDP {
 
     llvm::Function::arg_iterator AI = mainFunc_extern->arg_begin();
 
-    // AI->setName( "lo" );
-    // vecCallArgument.push_back( AI );
-    // AI++;
+    AI->setName( "lo" );
+    vecCallArgument.push_back( AI );
+    AI++;
 
-    // AI->setName( "hi" );
-    // vecCallArgument.push_back( AI );
-    // AI++;
+    AI->setName( "hi" );
+    vecCallArgument.push_back( AI );
+    AI++;
 
     // AI->setName( "myId" );
     // vecCallArgument.push_back( AI );
@@ -1297,7 +1298,7 @@ namespace QDP {
     }
     fptr_mainFunc_extern = TheExecutionEngine->getPointerToFunction( mainFunc_extern );
 
-    Mod->dump();
+    //Mod->dump();
 
     function_created = false;
     function_started = false;

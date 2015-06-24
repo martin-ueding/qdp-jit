@@ -55,7 +55,7 @@ namespace QDP {
     }
     order += a[Nd].second;
 
-    QDPIO::cout << "order: " << order << "    sti = " << space_time_index << "\n";
+    //QDPIO::cout << "order: " << order << "    sti = " << space_time_index << "\n";
 
     order = order * Layout::sitesOnNode() + space_time_index;
 
@@ -292,7 +292,7 @@ namespace QDP {
 
   std::array<int,Nd> volume_loop_linear_2_coord( int linear )
   {
-    QDPIO::cout << linear << " " << jit_volume_loop.size() << "\n";
+    //QDPIO::cout << linear << " " << jit_volume_loop.size() << "\n";
     assert( linear < jit_volume_loop.size() );
     assert( jit_volume_loop.size() > 0 );
     return jit_volume_loop[linear];
@@ -340,9 +340,9 @@ namespace QDP {
 
 	for(int i=0;i<Nd;++i) {
 	  coord[i] = sn[i] * Layout::subnodeLattSize()[i] + lc[i];
-	  QDPIO::cout << coord[i] << " ";
+	  //QDPIO::cout << coord[i] << " ";
 	}
-	QDPIO::cout << "\n";
+	//QDPIO::cout << "\n";
 
 	// Paranoic test
 	for (auto& s : jit_volume_loop)

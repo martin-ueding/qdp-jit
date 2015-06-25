@@ -33,9 +33,9 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
   typedef typename ForEach<QDPExpr<RHS,OLattice<T1> >, ParamLeaf, TreeCombine>::Type_t View_t;
   View_t rhs_view(forEach(rhs, param_leaf, TreeCombine()));
 
-  for ( int j = 0 ; j < Nd ; ++j ) 
+  for ( int j = 0 ; j < Nd ; ++j )
     QDPIO::cout << "subnodeLattSize()[" << j << "] = " <<  Layout::subnodeLattSize()[j] << std::endl;
-  for ( int j = 0 ; j < Nd ; ++j ) 
+  for ( int j = 0 ; j < Nd ; ++j )
     QDPIO::cout << "nodeGeom()[" << j << "] = " <<  Layout::nodeGeom()[j] << std::endl;
 
   for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
@@ -117,30 +117,10 @@ function_exec(const JitFunction& function,
 
   if (offnode_maps) 
     {
+#if 0
 #ifdef JIT_TIMING
       tt.push_back( 0.0 );
 #endif      
-      int innerCount        = MasterMap::Instance().getCountInner(s,offnode_maps);
-      int faceCount         = MasterMap::Instance().getCountFace(s,offnode_maps);
-      const int *innerSites = MasterMap::Instance().getInnerSites(s,offnode_maps).slice();
-      const int *faceSites  = MasterMap::Instance().getFaceSites(s,offnode_maps).slice();
-
-      //QDPIO::cerr << "we have " << innerCount << " inner and " << faceCount << " face sites\n";
-
-      // if (( innerCount % getDataLayoutInnerSize() ) ||
-      // 	  ( faceCount  % getDataLayoutInnerSize() ))
-      // 	QDP_error_exit("implementation limitation. innerCount=%d , faceCount=%d must be multiple of inner length=%d",
-      // 		       innerCount,faceCount,getDataLayoutInnerSize());
-
-      // QDPIO::cerr << "Inner sites: ";
-      // for (int i = 0 ; i < innerCount ; ++i )
-      // 	QDPIO::cerr << innerSites[i] << " ";
-      // QDPIO::cerr << "\n";
-
-      // QDPIO::cerr << "Face sites: ";
-      // for (int i = 0 ; i < faceCount ; ++i )
-      // 	QDPIO::cerr << faceSites[i] << " ";
-      // QDPIO::cerr << "\n";
 
       AddressLeaf addr_leaf(s);
 
@@ -170,8 +150,10 @@ function_exec(const JitFunction& function,
       sw.start();
 #endif
 
+#if 0
       ShiftPhase2 phase2;
       forEach(rhs, phase2 , NullCombine());
+#endif
 
 #ifdef JIT_TIMING
       sw.stop();
@@ -204,7 +186,7 @@ function_exec(const JitFunction& function,
       sw.stop();
       tt.push_back( sw.getTimeInMicroseconds() );
 #endif
-
+#endif
     }
   else
     {
@@ -487,6 +469,7 @@ function_gather_exec( const JitFunction& function,
 		      const QDPExpr<RHS,OLattice<T1> >& rhs , 
 		      const Subset& subset )
 {
+#if 0
 #ifdef JIT_TIMING
   std::vector<double> tt;
   StopWatch sw;
@@ -532,6 +515,7 @@ function_gather_exec( const JitFunction& function,
       QDPIO::cout << tt.at(i) << " ";
     QDPIO::cout << "\n";
   }
+#endif
 #endif
 }
 

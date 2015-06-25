@@ -40,6 +40,7 @@ namespace QDP {
   }
 
 
+#if 0
 //-----------------------------------------------------------------------------
 //! Initializer for generic map constructor
   void Map::make(const MapFunc& func)
@@ -356,7 +357,7 @@ namespace QDP {
     t.stop();
     QDPIO::cerr << "Face and inner compute time = " << t.getTimeInSeconds() << " secs\n";
   }
-
+#endif
 
 
 

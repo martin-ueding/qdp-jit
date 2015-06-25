@@ -247,7 +247,7 @@ namespace QDP
       initDefaultSets();
 
       // Default maps
-      initDefaultMaps();
+      //initDefaultMaps();  // not needed
       
       // Initialize RNG
       //RNG::initDefaultRNG();

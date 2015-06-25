@@ -175,7 +175,6 @@ namespace QDP {
 #include "qdp_newopsreg.h"
 
 #include "qdp_optops.h"
-#include "qdp_mastermap.h"
 
 #include "qdp_profile.h"
 

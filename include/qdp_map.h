@@ -64,14 +64,18 @@ struct FnMap
   //PETE_EMPTY_CONSTRUCTORS(FnMap)
 private:
   FnMap& operator=(const FnMap& f);
+  int isign,dir;
 
 public:
-  const Map& map;
-  //std::shared_ptr<RsrcWrapper> pRsrc;
+  int getSign() const { return isign; }
+  int getDir() const { return dir; }
+
+  //const Map& map;
   QDPHandle::Handle<RsrcWrapper> pRsrc;
 
-  FnMap(const Map& m);
-  FnMap(const FnMap& f);
+  FnMap(int isign, int dir): isign(isign), dir(dir) {}
+  // FnMap(const Map& m);
+  // FnMap(const FnMap& f);
 
   const FnMapRsrc& getResource(int srcnum_, int dstnum_) {
     //assert(pRsrc);
@@ -105,70 +109,35 @@ public:
   ~Map() {}
 
   //! Constructor from a function object
-  Map(const MapFunc& fn) {make(fn);}
+  //Map(const MapFunc& fn) {make(fn);}
+  Map(int isign, int dir): isign(isign), dir(dir) {}
 
   //! Actual constructor from a function object
   /*! The semantics are   source_site = func(dest_site,isign) */
-  void make(const MapFunc& func);
+  //void make(const MapFunc& fn) { func = &fn; };
 
 
-  template<class T1,class C1>
-  inline typename MakeReturn<UnaryNode<FnMap,
-    typename CreateLeaf<QDPType<T1,C1> >::Leaf_t>, C1>::Expression_t
-  operator()(const QDPType<T1,C1> & l)
-    {
-      typedef UnaryNode<FnMap,
-	typename CreateLeaf<QDPType<T1,C1> >::Leaf_t> Tree_t;
-      return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap(*this),
-	CreateLeaf<QDPType<T1,C1> >::make(l)));
-    }
+  // template<class T1,class C1>
+  // inline typename MakeReturn<UnaryNode<FnMap,
+  //   typename CreateLeaf<QDPType<T1,C1> >::Leaf_t>, C1>::Expression_t
+  // operator()(const QDPType<T1,C1> & l)
+  //   {
+  //     typedef UnaryNode<FnMap,
+  // 	typename CreateLeaf<QDPType<T1,C1> >::Leaf_t> Tree_t;
+  //     return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap(*this),
+  // 	CreateLeaf<QDPType<T1,C1> >::make(l)));
+  //   }
 
-
-  template<class T1,class C1>
-  inline typename MakeReturn<UnaryNode<FnMap,
-    typename CreateLeaf<QDPExpr<T1,C1> >::Leaf_t>, C1>::Expression_t
-  operator()(const QDPExpr<T1,C1> & l)
-    {
-      typedef UnaryNode<FnMap,
-	typename CreateLeaf<QDPExpr<T1,C1> >::Leaf_t> Tree_t;
-      return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap(*this),
-	CreateLeaf<QDPExpr<T1,C1> >::make(l)));
-    }
-
-
-public:
-  //! Accessor to offsets
-  const multi1d<int>& goffset(const Subset& s) const {
-    assert( s.getId() >= 0 && s.getId() < goffsets.size() && "goffset: subset Id out of range");
-    return goffsets[s.getId()];
-  }
-  const multi1d<int>& soffset(const Subset& s) const {
-    assert( s.getId() >= 0 && s.getId() < soffsets.size() && "soffset: subset Id out of range");
-    return soffsets[s.getId()];
-  }
-  multi1d<int>& soffset(const Subset& s) {
-    assert( s.getId() >= 0 && s.getId() < soffsets.size() && "soffset: subset Id out of range");
-    return soffsets[s.getId()];
-  }
-  const multi1d<int>& roffset(const Subset& s) const {
-    assert( s.getId() >= 0 && s.getId() < roffsets.size() && "roffset: subset Id out of range");
-    return roffsets[s.getId()];
-  }
-
-  const multi1d< multi1d<int> >& get_srcenodes_num() const { return srcenodes_num; }
-  const multi1d< multi1d<int> >& get_destnodes_num() const { return destnodes_num; }
-
-  const multi1d<int>& get_srcenodes() const { return srcenodes; }
-  const multi1d<int>& get_destnodes() const { return destnodes; }
-
-  //multi1d<int>& soffset() {return soffsets;}
-
-  // int getRoffsetsId() const { return roffsetsId;}
-  // int getSoffsetsId() const { return soffsetsId;}
-  // int getGoffsetsId() const { return goffsetsId;}
-
-  int getId() const {return myId;}
-  bool hasOffnode() const { return offnodeP; }
+  // template<class T1,class C1>
+  // inline typename MakeReturn<UnaryNode<FnMap,
+  //   typename CreateLeaf<QDPExpr<T1,C1> >::Leaf_t>, C1>::Expression_t
+  // operator()(const QDPExpr<T1,C1> & l)
+  //   {
+  //     typedef UnaryNode<FnMap,
+  // 	typename CreateLeaf<QDPExpr<T1,C1> >::Leaf_t> Tree_t;
+  //     return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap(*this),
+  // 	CreateLeaf<QDPExpr<T1,C1> >::make(l)));
+  //   }
 
 private:
   //! Hide copy constructor
@@ -179,31 +148,9 @@ private:
 
 private:
   friend class FnMap;
-  friend class FnMapRsrc;
   template<class E,class F,class C> friend class ForEach;
 
-  //! Offset table used for communications. 
-  /*! 
-   * The direction is in the sense of the Map or Shift functions from QDP.
-   * goffsets(position) 
-   */ 
-  multi1d< multi1d<int> > goffsets;    // [subset no.][linear index] > 0 local, < 0 receive buffer index
-  multi1d< multi1d<int> > soffsets;    // [subset no.][0..N] = linear index   N = destnodes_num
-  multi1d< multi1d<int> > roffsets;    // [subset no.][0..N] = linear index   N = srcenodes_num
-
-  // int roffsetsId;
-  // int soffsetsId;
-  // int goffsetsId;
-  int myId; // master map id
-
-  multi1d<int> srcenodes;                   // node number index = node number
-  multi1d<int> destnodes;                   // node number index = node number
-
-  multi1d< multi1d<int> > srcenodes_num;    // [subset no.][node number index] = number of sites
-  multi1d< multi1d<int> > destnodes_num;    // [subset no.][node number index] = number of sites
-
-  // Indicate off-node communications is needed;
-  bool offnodeP;
+  int isign,dir;
 };
 
 
@@ -215,13 +162,15 @@ struct FnMapJIT
 {
 public:
   IndexRet index;
-  const Map& map;
+  //const Map& map;
   //std::shared_ptr<RsrcWrapper> pRsrc;
   QDPHandle::Handle<RsrcWrapper> pRsrc;
 
+  int isign, dir;
+
   FnMapJIT(const FnMap& fnmap,const IndexRet& i): 
-    map(fnmap.map), pRsrc(fnmap.pRsrc), index(i) {}
-  FnMapJIT(const FnMapJIT& f) : map(f.map) , pRsrc(f.pRsrc), index(f.index) {}
+    pRsrc(fnmap.pRsrc), index(i), isign(fnmap.getSign()), dir(fnmap.getDir()) {}
+  FnMapJIT(const FnMapJIT& f) : pRsrc(f.pRsrc), index(f.index), isign(f.isign), dir(f.dir) {}
 
 public:
   template<class T>
@@ -259,7 +208,7 @@ struct ForEach<UnaryNode<FnMap, A>, ParamLeaf, TreeCombine>
     {
       //std::cout << __PRETTY_FUNCTION__ << ": entering\n";
 
-      const Map& map = expr.operation().map;
+      //const Map& map = expr.operation().map;
       FnMap& fnmap = const_cast<FnMap&>(expr.operation());
 
       typedef typename WordType<InnerType_t>::Type_t AWordType_t;
@@ -283,6 +232,29 @@ struct ForEach<UnaryNode<FnMap, A>, ParamLeaf, TreeCombine>
 
 
 
+//! Function object used for constructing the default nearest neighbor map
+struct NearestNeighborMapFunc : public ArrayMapFunc
+{
+  NearestNeighborMapFunc() {}
+
+  // Virtual destructor - no cleanup needed
+  virtual ~NearestNeighborMapFunc() {} 
+
+  virtual multi1d<int> operator() (const multi1d<int>& coord, int sign, int dir) const
+    {
+      multi1d<int> lc = coord;
+
+      const multi1d<int>& nrow = Layout::lattSize();
+      lc[dir] = (coord[dir] + sgnum(sign) + 4*nrow[dir]) % nrow[dir];
+
+      return lc;
+    }
+
+  virtual int numArray() const {return Nd;}
+
+private:
+  int sgnum(int x) const {return (x > 0) ? 1 : -1;}
+};
 
 
 
@@ -296,6 +268,31 @@ struct ForEach<UnaryNode<FnMapJIT, A>, ViewLeaf, OpCombine>
     inline
     static Type_t apply(const UnaryNode<FnMapJIT, A>& expr, const ViewLeaf &v, const OpCombine &o)
     {
+      IndexDomainVector idv = v.getIndexVec();
+
+      multi1d<int> coord(Nd);
+      for ( int i = 0 ; i< Nd ; ++i ) {
+	assert( Layout::subgridLattSize()[i] == idv[i].first && "IndexDomainVector doesn't use the same order of coordinates as Layout does");
+	coord[i] = idv[i].second;
+      }
+
+      NearestNeighborMapFunc bbb;
+      int sign = expr.operation().isign;
+      int dir  = expr.operation().dir;
+
+      multi1d<int> coord_new(Nd);
+      coord_new = bbb( coord , sign , dir );
+
+      idv[ dir ].second = coord_new[ dir ];
+
+      ViewLeaf vv( JitDeviceLayout::LayoutCoalesced , idv );
+
+      return Combine1<TypeA_t, 
+		      FnMapJIT , 
+		      OpCombine>::combine(ForEach<A, ViewLeaf, OpCombine>::apply(expr.child(), vv, o) , 
+					  expr.operation(), o);
+
+
       assert(!"ni");
 #if 0
       Type_t ret;
@@ -369,7 +366,7 @@ struct ForEach<UnaryNode<FnMap, A>, AddressLeaf, NullCombine>
     inline
     static Type_t apply(const UnaryNode<FnMap, A>& expr, const AddressLeaf &a, const NullCombine &n)
     {
-#if 1
+#if 0
       const Map& map = expr.operation().map;
       FnMap& fnmap = const_cast<FnMap&>(expr.operation());
 
@@ -406,7 +403,7 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
   Type_t apply(const UnaryNode<FnMap, A> &expr, const ShiftPhase1 &f, const BitOrCombine &c)
   {
     //QDP_error_exit("ni addressleaf map apply");
-#if 1
+#if 0
     const Map& map = expr.operation().map;
     FnMap& fnmap = const_cast<FnMap&>(expr.operation());
 
@@ -441,7 +438,7 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
 	  // forEach(subexpr, phase2 , NullCombine());
 	}
 
-#if 1
+#if 0
 	static JitFunction function;
 
 	// Build the function
@@ -475,7 +472,7 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase1 , BitOrCombine>
 
 
 
-
+#if 0
 template<class A, class CTag>
 struct ForEach<UnaryNode<FnMap, A>, ShiftPhase2 , CTag>
 {
@@ -515,7 +512,7 @@ struct ForEach<UnaryNode<FnMap, A>, ShiftPhase2 , CTag>
     return ForEach<A, ShiftPhase2, CTag>::apply(expr.child(), f, c);
   }
 };
-
+#endif
 
 
 
@@ -545,6 +542,7 @@ struct ForEach<UnaryNode<FnMap, A>, HasOffNodeShift , BitOrCombine>
   inline static
   Type_t apply(const UnaryNode<FnMap, A> &expr, const HasOffNodeShift &f, const BitOrCombine &c)
   {
+#if 0
     const Map& map = expr.operation().map;
 
     int ret = 0;
@@ -553,6 +551,7 @@ struct ForEach<UnaryNode<FnMap, A>, HasOffNodeShift , BitOrCombine>
       ret |= map.getId();
 
     return ret;
+#endif
   }
 };
 
@@ -700,12 +699,9 @@ public:
   //! Destructor
   ~ArrayBiDirectionalMap() {}
 
-  //! Constructor from a function object
-  ArrayBiDirectionalMap(const ArrayMapFunc& fn) {make(fn);}
 
   //! Actual constructor from a function object
   /*! The semantics are   source_site = func(dest_site,isign,dir) */
-  void make(const ArrayMapFunc& func);
 
   //! Function call operator for a shift
   /*! 
@@ -734,8 +730,8 @@ public:
     {
       typedef UnaryNode<FnMap,
 	typename CreateLeaf<QDPType<T1,C1> >::Leaf_t> Tree_t;
-      return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap(bimapsa((isign+1)>>1,dir)),
-	CreateLeaf<QDPType<T1,C1> >::make(l)));
+      return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap( isign , dir ),
+						CreateLeaf<QDPType<T1,C1> >::make(l)));
     }
 
 
@@ -746,11 +742,10 @@ public:
     {
       typedef UnaryNode<FnMap,
 	typename CreateLeaf<QDPExpr<T1,C1> >::Leaf_t> Tree_t;
-      return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap(bimapsa((isign+1)>>1,dir)),
-	CreateLeaf<QDPExpr<T1,C1> >::make(l)));
+      return MakeReturn<Tree_t,C1>::make(Tree_t(FnMap( isign , dir ),
+						CreateLeaf<QDPExpr<T1,C1> >::make(l)));
     }
 
-  const Map& getMap(int isign,int dir) const { return bimapsa((isign+1)>>1,dir); }
 
 private:
   //! Hide copy constructor
@@ -758,15 +753,11 @@ private:
 
   //! Hide operator=
   void operator=(const ArrayBiDirectionalMap&) {}
-
-private:
-  multi2d<Map> bimapsa;
-  
 };
 
 
 // Add this code if you need CPU shifts
-#if 1
+#if 0
 template<class A, class CTag>
 struct ForEach<UnaryNode<FnMap, A>, EvalLeaf1, CTag>
 {

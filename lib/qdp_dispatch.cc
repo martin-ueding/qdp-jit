@@ -28,7 +28,7 @@ namespace QDP {
     int64_t hi = Layout::sitesOnNode();
     void * addr = args.addr.data();
 
-    //QDPIO::cerr << "dispatch...\n";
+    //QDPIO::cerr << "dispatch... " << args.addr.size() << "\n";
 
     // #pragma omp parallel shared(site_count, threads_num, ordered, start, addr) private(myId, lo, hi) default(shared)
     //     {

@@ -53,6 +53,7 @@ namespace QDP {
     bool debug_func_build      = false;
     bool debug_func_dump       = false;
     bool debug_func_write      = false;
+    bool debug_asm_write      = false;
     bool debug_loop_vectorizer = false;
     bool debug_qdp_jit_roll    = false;
     std::string name_pretty;
@@ -79,6 +80,10 @@ namespace QDP {
     }
     if (str.find("function-write") != string::npos) {
       llvm_debug::debug_func_write = true;
+      return;
+    }
+    if (str.find("asm-write") != string::npos) {
+      llvm_debug::debug_asm_write = true;
       return;
     }
     QDP_error_exit("unknown debug argument: %s",c_str);
@@ -1063,6 +1068,21 @@ namespace QDP {
       QDPIO::cerr << "    optimizing ...\n";
     }
 
+    //llvm::PassManager *PassManager = new PassManager();
+    // llvm::PassRegistry &registry = *llvm::PassRegistry::getPassRegistry();
+    // initializeScalarOpts(registry);
+
+#if 0
+    targetMachine->addAnalysisPasses(*PassManager);
+    PassManager->addPass(new llvm::TargetLibraryInfo(llvm::Triple(Mod->getTargetTriple())));
+    PassManager->addPass(new llvm::DataLayoutPass());
+    PassManager->addPass(llvm::createBasicAliasAnalysisPass());
+    PassManager->addPass(llvm::createSLPVectorizerPass());
+    PassManager->addPass(llvm::createInstructionCombiningPass());
+    PassManager->addPass(llvm::create_qdp_jit_roll_pass());
+#endif
+
+#if 1
     static llvm::FunctionPassManager *functionPassManager = NULL;
     if (functionPassManager == NULL) {
       llvm::PassRegistry &registry = *llvm::PassRegistry::getPassRegistry();
@@ -1089,6 +1109,8 @@ namespace QDP {
       //functionPassManager->add(llvm::createGVNPass()); // eliminate redundant index instructions
       //functionPassManager->add(llvm::createStupidAlignPass()); // change alignment of vector load/stores from 8 to 32
     }
+#endif
+
     if (llvm_debug::debug_loop_vectorizer) {
       if (Layout::primaryNode()) {
 	llvm::DebugFlag = true;
@@ -1103,6 +1125,11 @@ namespace QDP {
     }
 
     functionPassManager->run(*mainFunc);
+
+#if 1
+    llvm::ModulePass* qdp_jit_roll_pass = llvm::create_qdp_jit_roll_pass();
+    qdp_jit_roll_pass->runOnModule(*Mod);
+#endif
 
     if (llvm_debug::debug_func_dump) {
       if (Layout::primaryNode()) {
@@ -1142,25 +1169,26 @@ namespace QDP {
       }
     }
 
-#if 0
+#if 1
     // Write assembly
-    {
-      llvm::FunctionPassManager *functionPassManager = new llvm::FunctionPassManager(Mod);
-      llvm::PassManager PM;
+    if (llvm_debug::debug_asm_write) {
+      if (Layout::primaryNode()) {
+	llvm::PassManager PM;
 
-      std::string str;
-      llvm::raw_string_ostream rsos(str);
-      llvm::formatted_raw_ostream FOS(rsos);
+	std::string str;
+	llvm::raw_string_ostream rsos(str);
+	llvm::formatted_raw_ostream FOS(rsos);
 
-      if (targetMachine->addPassesToEmitFile( PM , FOS , llvm::TargetMachine::CGFT_AssemblyFile ) ) {
-	std::cout << "addPassesToEmitFile failed\n";
-        exit(1);
+	if (targetMachine->addPassesToEmitFile( PM , FOS , llvm::TargetMachine::CGFT_AssemblyFile ) ) {
+	  std::cout << "addPassesToEmitFile failed\n";
+	  exit(1);
+	}
+	PM.run(*Mod);
+	FOS.flush();
+	std::cerr << "Assembly:\n";
+	std::cerr << str << "\n";
+	std::cerr << "end assembly!\n";
       }
-      PM.run(*Mod);
-      FOS.flush();
-      std::cerr << "Assembly:\n";
-      std::cerr << str << "\n";
-      std::cerr << "end assembly!\n";
     }
 #endif
 

@@ -219,8 +219,10 @@ struct ForEach<UnaryNode<FnMap, A>, ParamLeaf, TreeCombine>
       // }
 
       IndexRet index_pack;
+#if 0
       index_pack.p_multi_index = llvm_add_param<int*>();
       index_pack.p_recv_buf    = llvm_add_param<AWordType_t*>(); // This deduces it's type from A
+#endif
 
       return Type_t( FnMapJIT( expr.operation() , index_pack ) , 
 		     ForEach< A, ParamLeaf, TreeCombine >::apply( expr.child() , p , c ) );
@@ -382,9 +384,8 @@ struct ForEach<UnaryNode<FnMap, A>, AddressLeaf, NullCombine>
       }
       //QDP_info("Map:AddressLeaf: add recv buf p=%p",rcvBufDev);
       a.setAddr(rcvBuf);
-
-      return Type_t( ForEach<A, AddressLeaf, NullCombine>::apply( expr.child() , a , n ) );
 #endif
+      return Type_t( ForEach<A, AddressLeaf, NullCombine>::apply( expr.child() , a , n ) );
     }
   };
 

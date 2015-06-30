@@ -77,7 +77,28 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
 
 
 
+template<class T, class T1, class Op, class RHS>
+void 
+function_exec(const JitFunction& function, 
+	      OLattice<T>& dest, 
+	      const Op& op, 
+	      const QDPExpr<RHS,OLattice<T1> >& rhs, 
+	      const Subset& s)
+{
+  //QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
 
+  AddressLeaf addr_leaf(s);
+
+  int junk_dest = forEach(dest, addr_leaf, NullCombine());
+  AddOpAddress<Op,AddressLeaf>::apply(op,addr_leaf);
+  int junk_rhs = forEach(rhs, addr_leaf , NullCombine());
+
+  jit_dispatch(function.func().at(0),addr_leaf);
+}
+
+
+
+#if 0
 template<class T, class T1, class Op, class RHS>
 void 
 function_exec(const JitFunction& function, 
@@ -204,7 +225,7 @@ function_exec(const JitFunction& function,
   std::cout << "calling eval(Lattice,Lattice).. " << addr_leaf.addr.size() << "\n";  
 #endif
 }
-
+#endif
 
 
 

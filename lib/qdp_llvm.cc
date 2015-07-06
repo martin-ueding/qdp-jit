@@ -53,7 +53,8 @@ namespace QDP {
     bool debug_func_build      = false;
     bool debug_func_dump       = false;
     bool debug_func_write      = false;
-    bool debug_asm_write      = false;
+    bool debug_func_write_pre  = false;
+    bool debug_asm_write       = false;
     bool debug_loop_vectorizer = false;
     bool debug_qdp_jit_roll    = false;
     std::string name_pretty;
@@ -76,6 +77,10 @@ namespace QDP {
     }
     if (str.find("function-dump") != string::npos) {
       llvm_debug::debug_func_dump = true;
+      return;
+    }
+    if (str.find("function-write-pre-passes") != string::npos) {
+      llvm_debug::debug_func_write_pre = true;
       return;
     }
     if (str.find("function-write") != string::npos) {
@@ -1082,16 +1087,38 @@ namespace QDP {
     PassManager->addPass(llvm::create_qdp_jit_roll_pass());
 #endif
 
+
+
+#if 0
+    {
+      llvm::ModulePass* pass_0 = new llvm::DataLayoutPass();
+      pass_0->runOnModule(*Mod);
+    }
+    {
+      llvm::ModulePass* pass_0 = llvm::createBasicAliasAnalysisPass();
+      pass_0->runOnModule(*Mod);
+    }
+    {
+      llvm::Pass* pass_0 = llvm::createSLPVectorizerPass();
+      llvm::cast<llvm::FunctionPass>(pass_0)->runOnFunction(*mainFunc);
+    }
+    {
+      llvm::FunctionPass* pass_0 = llvm::createInstructionCombiningPass();
+      //pass_0->runOnFunction(*mainFunc);
+    }
+#endif
+
+
 #if 1
     static llvm::FunctionPassManager *functionPassManager = NULL;
     if (functionPassManager == NULL) {
-      llvm::PassRegistry &registry = *llvm::PassRegistry::getPassRegistry();
-      initializeScalarOpts(registry);
+      // llvm::PassRegistry &registry = *llvm::PassRegistry::getPassRegistry();
+      // initializeScalarOpts(registry);
 
       functionPassManager = new llvm::FunctionPassManager(Mod);
       //functionPassManager->add(llvm::createVerifierPass(llvm::PrintMessageAction));
       targetMachine->addAnalysisPasses(*functionPassManager);
-      functionPassManager->add(new llvm::TargetLibraryInfo(llvm::Triple(Mod->getTargetTriple())));
+      //functionPassManager->add(new llvm::TargetLibraryInfo(llvm::Triple(Mod->getTargetTriple())));
       functionPassManager->add(new llvm::DataLayoutPass());
       functionPassManager->add(llvm::createBasicAliasAnalysisPass());
       //functionPassManager->add(llvm::createLICMPass());
@@ -1111,6 +1138,7 @@ namespace QDP {
     }
 #endif
 
+
     if (llvm_debug::debug_loop_vectorizer) {
       if (Layout::primaryNode()) {
 	llvm::DebugFlag = true;
@@ -1123,6 +1151,38 @@ namespace QDP {
 	llvm::setCurrentDebugType("qdp_jit_roll");
       }
     }
+
+
+    if (llvm_debug::debug_func_write_pre) {
+      if (Layout::primaryNode()) {
+	std::string str;
+
+	llvm::raw_string_ostream rss(str);
+	Mod->print(rss,new llvm::AssemblyAnnotationWriter());
+
+	char* fname = new char[100];
+	sprintf(fname,"module_XXXXXX");
+	mkstemp(fname);
+	QDPIO::cerr << "Pre-passes: " << fname << "\n";
+
+	// size_t start_pos = str.find("main");
+	// if(start_pos == std::string::npos)
+	//   QDP_error_exit("main not found in IR");
+	// str.replace(start_pos, 4, fname);
+
+	str.insert(0,llvm_debug::name_additional);
+	str.insert(0,llvm_debug::name_pretty);
+	str.insert(0,";");
+
+	ofstream myfile;
+	myfile.open (fname);
+	myfile << str;
+	myfile.close();
+
+	delete[] fname;
+      }
+    }
+
 
     functionPassManager->run(*mainFunc);
 
@@ -1151,10 +1211,10 @@ namespace QDP {
 	mkstemp(fname);
 	QDPIO::cerr << fname << "\n";
 
-	size_t start_pos = str.find("main");
-	if(start_pos == std::string::npos)
-	  QDP_error_exit("main not found in IR");
-	str.replace(start_pos, 4, fname);
+	// size_t start_pos = str.find("main");
+	// if(start_pos == std::string::npos)
+	//   QDP_error_exit("main not found in IR");
+	// str.replace(start_pos, 4, fname);
 
 	str.insert(0,llvm_debug::name_additional);
 	str.insert(0,llvm_debug::name_pretty);

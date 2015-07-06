@@ -278,6 +278,7 @@ namespace QDP {
 		char rtinode[maxlen];
 		strncpy(rtinode, "your_local_food_store", maxlen);
 		bool jit_layout_set=false;
+		char llvm_cl[1024] = "";
 		
 		// Usage
 		if (Layout::primaryNode())  {
@@ -340,6 +341,12 @@ namespace QDP {
 			  char tmp[1024];
 			  sscanf((*argv)[++i], "%s", &tmp);
 			  llvm_append_mattr(tmp);
+			}
+			else if (strcmp((*argv)[i], "-llvm-cl")==0) 
+			{
+			  char tmp[1024];
+			  sscanf((*argv)[++i], "%s", &tmp);
+			  strcat( llvm_cl , tmp );
 			}
 			else if (strcmp((*argv)[i], "-debug")==0) 
 			{
@@ -424,6 +431,13 @@ namespace QDP {
 #endif
 
 		QDP_initialize_QMP(argc, argv);
+
+		if ( strlen(llvm_cl) > 0 ) {
+		  char* my_argv[2];
+		  my_argv[0] = (char*)"prg";
+		  my_argv[1] = llvm_cl;
+		  llvm::cl::ParseCommandLineOptions( 2 , my_argv , "qdp-jit");
+		}
 		
 		//QDP_print_jit_datalayout();
 	}

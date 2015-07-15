@@ -250,7 +250,7 @@ namespace QDP
       //initDefaultMaps();  // not needed
       
       // Initialize RNG
-      //RNG::initDefaultRNG();
+      RNG::initDefaultRNG();
       
       // Set default profile level
       setProfileLevel(getProgramProfileLevel());
@@ -393,10 +393,6 @@ namespace QDP
 	  QDP_error_exit("Layout::create - Layout problems, the layout functions do not work correctly with this lattice size");
       }
 #endif
-      // Initialize various defaults
-      initDefaults();
-
-
       for(int j=0; j < Nd; j++) {
 	if (_layout.subgrid_nrow[j] % _layout.logical_nodegeom[j] != 0) {
 	  QDP_error_exit("Node geometry coordinate number %d not compatible with node volume extent.",j);
@@ -405,6 +401,10 @@ namespace QDP
       }
 
       setup_nodevolume_loop_SIMD();
+
+      // Initialize various defaults
+      initDefaults();
+
 
       QDPIO::cout << "Finished lattice layout" << endl;
 

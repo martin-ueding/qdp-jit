@@ -34,7 +34,9 @@ namespace Layout
 	  Integer cc = Layout::siteCoords(nodeNumber,i)[mu];
 	  d.elem(i) = cc.elem();
 	}
+      QDPIO::cout << "before\n";
       latCoord[mu] = d;
+      QDPIO::cout << "after\n";
       availCoord[mu] = true;
     }
 

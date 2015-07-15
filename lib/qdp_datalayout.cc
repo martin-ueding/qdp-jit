@@ -28,39 +28,56 @@ namespace QDP {
   // Datalayout which is SIMD friendly for shift operations
   //
   llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
-    assert( a.size() == 3+Nd && "IndexDomainVector size not 3+Nd" );
+    if (lay == JitDeviceLayout::LayoutCoalesced) {
+      assert( a.size() == 3+Nd && "IndexDomainVector size not 3+Nd" );
 
-    std::array<int,Nd> lc;  // coordinate within a subnode
-    std::array<int,Nd> sn;  // coordinate of the subnode
+      std::array<int,Nd> lc;  // coordinate within a subnode
+      std::array<int,Nd> sn;  // coordinate of the subnode
 
-    for(int i=0;i<Nd;++i) {
-      lc[i] = a[i].second % Layout::subnodeLattSize()[i];
-      sn[i] = a[i].second / Layout::subnodeLattSize()[i];
-      //      QDPIO::cout << coord[i] << " ";
+      for(int i=0;i<Nd;++i) {
+	lc[i] = a[i].second % Layout::subnodeLattSize()[i];
+	sn[i] = a[i].second / Layout::subnodeLattSize()[i];
+	//      QDPIO::cout << coord[i] << " ";
+      }
+      //    QDPIO::cout << "\n";
+
+      int inner_idx = jit_local_site( sn , Layout::nodeGeom() );
+      int outer_idx = jit_local_site( lc , Layout::subnodeLattSize() );
+
+      int inner_domain = Layout::jit_get_number_of_subnodes_per_node();
+      int space_time_index = inner_domain * outer_idx + inner_idx;
+
+      int order = 0;
+
+      for( int mmu = a.size() - 1 ; mmu >= Nd+1 ; --mmu ) {
+	order = a[mmu-1].first*(a[mmu].second + order);
+      }
+      order += a[Nd].second;
+
+      //QDPIO::cout << "order: " << order << "    sti = " << space_time_index << "\n";
+
+      order = order * Layout::sitesOnNode() + space_time_index;
+
+      return llvm_create_value( order );
+    } else {
+      // JitDeviceLayout::LayoutScalar	
+      multi1d<int> coord(Nd);
+      for ( int i = 0 ; i < Nd ; i++ )
+	coord[i] = a[i].second;
+      int lindex = Layout::linearSiteIndex(coord);
+
+      int ret = lindex;
+      for ( int i = Nd ; i < a.size() ; i++ ) {
+	int domain = a[i].first;
+	int index  = a[i].second;
+	ret *= domain;
+	ret += index;
+      }
+      
+      QDPIO::cout << "linear index = " << lindex << "   total index = " << ret << "\n";
+
+      return llvm_create_value( ret );
     }
-    //    QDPIO::cout << "\n";
-
-    int inner_idx = jit_local_site( sn , Layout::nodeGeom() );
-    int outer_idx = jit_local_site( lc , Layout::subnodeLattSize() );
-
-    int inner_domain = Layout::jit_get_number_of_subnodes_per_node();
-
-    int space_time_index = inner_domain * outer_idx + inner_idx;
-
-
-    int order = 0;
-
-    for( int mmu = a.size() - 1 ; mmu >= Nd+1 ; --mmu ) {
-      order = a[mmu-1].first*(a[mmu].second + order);
-    }
-    order += a[Nd].second;
-
-    //QDPIO::cout << "order: " << order << "    sti = " << space_time_index << "\n";
-
-    order = order * Layout::sitesOnNode() + space_time_index;
-
-
-    return llvm_create_value( order );
   }
 #endif
 
@@ -344,10 +361,12 @@ namespace QDP {
 	}
 	//QDPIO::cout << "\n";
 
+#if 0
 	// Paranoic test
 	for (auto& s : jit_volume_loop)
 	  if ( s == coord )
 	    QDP_error_exit("Double coordinate");
+#endif
 
 	jit_volume_loop.push_back( coord );
 

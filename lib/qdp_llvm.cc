@@ -51,8 +51,9 @@ namespace QDP {
 
   namespace llvm_debug {
     bool debug_func_build      = false;
-    bool debug_func_dump       = false;
-    bool debug_func_write      = false;
+    bool debug_func_dump_post  = false;
+    bool debug_func_dump_pre   = false;
+    bool debug_func_write_post = false;
     bool debug_func_write_pre  = false;
     bool debug_asm_write       = false;
     bool debug_loop_vectorizer = false;
@@ -75,16 +76,20 @@ namespace QDP {
       llvm_debug::debug_func_build = true;
       return;
     }
-    if (str.find("function-dump") != string::npos) {
-      llvm_debug::debug_func_dump = true;
+    if (str.find("function-dump-pre-passes") != string::npos) {
+      llvm_debug::debug_func_dump_pre = true;
+      return;
+    }
+    if (str.find("function-dump-post-passes") != string::npos) {
+      llvm_debug::debug_func_dump_post = true;
       return;
     }
     if (str.find("function-write-pre-passes") != string::npos) {
       llvm_debug::debug_func_write_pre = true;
       return;
     }
-    if (str.find("function-write") != string::npos) {
-      llvm_debug::debug_func_write = true;
+    if (str.find("function-write-post-passes") != string::npos) {
+      llvm_debug::debug_func_write_post = true;
       return;
     }
     if (str.find("asm-write") != string::npos) {
@@ -1057,7 +1062,7 @@ namespace QDP {
     //
 #endif
 
-    if (llvm_debug::debug_func_dump) {
+    if (llvm_debug::debug_func_dump_pre) {
       if (Layout::primaryNode()) {
 	QDPIO::cerr << "LLVM IR function (before passes)\n";
 	mainFunc->dump();
@@ -1120,16 +1125,17 @@ namespace QDP {
       targetMachine->addAnalysisPasses(*functionPassManager);
       //functionPassManager->add(new llvm::TargetLibraryInfo(llvm::Triple(Mod->getTargetTriple())));
       functionPassManager->add(new llvm::DataLayoutPass());
-      functionPassManager->add(llvm::createBasicAliasAnalysisPass());
+      //functionPassManager->add(llvm::createBasicAliasAnalysisPass());
       //functionPassManager->add(llvm::createLICMPass());
       //functionPassManager->add(llvm::createGVNPass());
       //functionPassManager->add(llvm::createPromoteMemoryToRegisterPass());
       //functionPassManager->add(llvm::createBBVectorizePass());
-      functionPassManager->add(llvm::createSLPVectorizerPass());
+      //functionPassManager->add(llvm::createSLPVectorizerPass());
       ////functionPassManager->add(llvm::createLoopVectorizePass());
-      //functionPassManager->add(llvm::create_qdp_jit_roll_pass());
+      //functionPassManager->add(llvm::create_qdp_jit_vec_pass());
+      //functionPassManager->add(llvm::create_qdp_jit_roll_pass());   // this is a module pass, must be run separately
       //functionPassManager->add(llvm::createEarlyCSEPass());
-      functionPassManager->add(llvm::createInstructionCombiningPass());
+      //functionPassManager->add(llvm::createInstructionCombiningPass());
       //functionPassManager->add(llvm::createCFGSimplificationPass());
       //functionPassManager->add(llvm::createSimpleLoopUnrollPass() );  // unroll the vectorized loop with trip count 1
       //functionPassManager->add(llvm::createCFGSimplificationPass());  // join BB of vectorized loop with header
@@ -1183,15 +1189,28 @@ namespace QDP {
       }
     }
 
+    {
+      StopWatch w;
+      w.start();
+      functionPassManager->run(*mainFunc);
+      w.stop();
+      double sec = w.getTimeInSeconds();
+      QDPIO::cout << "time to vectorize func = " << sec << "s\n";
+    }
 
-    functionPassManager->run(*mainFunc);
-
-#if 1
-    llvm::ModulePass* qdp_jit_roll_pass = llvm::create_qdp_jit_roll_pass();
-    qdp_jit_roll_pass->runOnModule(*Mod);
+#if 0
+    {
+      StopWatch w;
+      w.start();
+      llvm::ModulePass* qdp_jit_roll_pass = llvm::create_qdp_jit_roll_pass();
+      qdp_jit_roll_pass->runOnModule(*Mod);
+      w.stop();
+      double sec = w.getTimeInSeconds();
+      QDPIO::cout << "time to roll code      = " << sec << "s\n";
+    }
 #endif
 
-    if (llvm_debug::debug_func_dump) {
+    if (llvm_debug::debug_func_dump_post) {
       if (Layout::primaryNode()) {
 	QDPIO::cerr << "LLVM IR function (after passes)\n";
 	//mainFunc->dump();
@@ -1199,7 +1218,7 @@ namespace QDP {
       }
     }
 
-    if (llvm_debug::debug_func_write) {
+    if (llvm_debug::debug_func_write_post) {
       if (Layout::primaryNode()) {
 	std::string str;
 
@@ -1384,7 +1403,17 @@ namespace QDP {
     if (llvm_debug::debug_func_build) {
       QDPIO::cerr << "    JIT compiling ...\n";
     }
-    fptr_mainFunc_extern = TheExecutionEngine->getPointerToFunction( mainFunc_extern );
+
+#if 1
+    {
+      StopWatch w;
+      w.start();
+      fptr_mainFunc_extern = TheExecutionEngine->getPointerToFunction( mainFunc_extern );
+      w.stop();
+      double sec = w.getTimeInSeconds();
+      QDPIO::cout << "time for JIT compile   = " << sec << "s\n";
+    }
+#endif
 
     //Mod->dump();
 

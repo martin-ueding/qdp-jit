@@ -38,6 +38,9 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
   for ( int j = 0 ; j < Nd ; ++j )
     QDPIO::cout << "nodeGeom()[" << j << "] = " <<  Layout::nodeGeom()[j] << std::endl;
 
+  StopWatch w;
+  w.start();
+
   for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
     std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
@@ -46,32 +49,15 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
     for( int i = 0 ; i < Nd ; ++i )
       idx.push_back( make_pair( Layout::subgridLattSize()[i] , coord[i] ) );
 
-  // for ( int lt = 0 ; lt < Layout::subnodeLattSize()[3] ; ++lt ) {
-  //   for ( int lz = 0 ; lz < Layout::subgridLattSize()[2] ; ++lz ) {
-  //     for ( int ly = 0 ; ly < Layout::subgridLattSize()[1] ; ++ly ) {
-  // 	for ( int lx = 0 ; lx < Layout::subgridLattSize()[0] ; ++lx ) {
-  // 	  for ( int snt = 0 ; snt < Layout::nodeGeom()[3] ; ++snt ) {
-  // 	    for ( int snz = 0 ; snz < Layout::nodeGeom()[2] ; ++snz ) {
-  // 	      for ( int sny = 0 ; sny < Layout::nodeGeom()[1] ; ++sny ) {
-  // 		for ( int snx = 0 ; snx < Layout::nodeGeom()[0] ; ++snx ) {
-  // 		  IndexDomainVector idx;
-
-  // 		  int x = snx * Layout::subnodeLattSize()[0] + lx;
-  // 		  int y = sny * Layout::subnodeLattSize()[1] + ly;
-  // 		  int z = snz * Layout::subnodeLattSize()[2] + lz;
-  // 		  int t = snt * Layout::subnodeLattSize()[3] + lt;
-
-		  // QDPIO::cout << x << " "  << y << " "  << z << " "  << t << std::endl;
-
-		  // idx.push_back( make_pair( Layout::subgridLattSize()[0] , x ) );
-		  // idx.push_back( make_pair( Layout::subgridLattSize()[1] , y ) );
-		  // idx.push_back( make_pair( Layout::subgridLattSize()[2] , z ) );
-		  // idx.push_back( make_pair( Layout::subgridLattSize()[3] , t ) );
-
     op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ),
 	    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutCoalesced , idx ), OpCombine()));
   }
 
+  w.stop();
+  double sec = w.getTimeInSeconds();
+  QDPIO::cout << "time to build function = " << sec << "s\n";
+
+  //QDPIO::cerr << "warning: JIT compilation disabled\n";
   func.func().push_back( jit_function_epilogue_get("jit_eval.ptx") );
 }
 
@@ -85,7 +71,8 @@ function_exec(const JitFunction& function,
 	      const QDPExpr<RHS,OLattice<T1> >& rhs, 
 	      const Subset& s)
 {
-  //QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
+#if 1
+  QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
 
   AddressLeaf addr_leaf(s);
 
@@ -94,6 +81,7 @@ function_exec(const JitFunction& function,
   int junk_rhs = forEach(rhs, addr_leaf , NullCombine());
 
   jit_dispatch(function.func().at(0),addr_leaf);
+#endif
 }
 
 

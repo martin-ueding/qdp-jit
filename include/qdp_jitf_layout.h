@@ -9,9 +9,10 @@ namespace QDP {
   void 
   function_layout_to_jit_build( JitFunction& func, const OLattice<T>& dest )
   {
-    assert( 0 && "ni");
-#if 0
-    JitMainLoop loop;
+    QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
+    //assert( 0 && "ni");
+#if 1
+    llvm_start_new_function();
 
     ParamLeaf param_leaf;
 
@@ -22,16 +23,19 @@ namespace QDP {
 
     typedef typename REGType<typename FuncRet_t::Subtype_t>::Type_t REGFuncRet_t;
 
-    IndexDomainVector r_idx = loop.getIdx();
+    for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
+      std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
 
-    REGFuncRet_t src_reg;
-    src_reg.setup ( src_jit.elem( JitDeviceLayout::LayoutScalar , r_idx ) );
+      IndexDomainVector idx;
+      for( int i = 0 ; i < Nd ; ++i )
+	idx.push_back( make_pair( Layout::subgridLattSize()[i] , coord[i] ) );
 
-    dest_jit.elem( JitDeviceLayout::LayoutCoalesced , r_idx ) = src_reg;
+      REGFuncRet_t src_reg;
+      src_reg.setup ( src_jit.elem( JitDeviceLayout::LayoutScalar , idx ) );
 
-    loop.done();
+      dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) = src_reg;
 
-    //QDPIO::cerr << "functionlayout_to_jit_build\n";
+    }
 
     func.func().push_back( jit_function_epilogue_get("jit_layout.ptx") );
 #endif
@@ -43,6 +47,7 @@ namespace QDP {
   void 
   function_layout_to_jit_exec(const JitFunction& function, T *dest, T *src )
   {
+    QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
     AddressLeaf addr_leaf(all);
 
     addr_leaf.setAddr( dest );
@@ -52,8 +57,9 @@ namespace QDP {
 
     QDPIO::cerr << "calling layout(to JIT)..\n";
 
-    assert( 0 && "ni");
+    //assert( 0 && "ni");
     //jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
+    jit_dispatch(function.func().at(0),addr_leaf);
   }
 
 
@@ -69,9 +75,9 @@ namespace QDP {
   void 
   function_layout_to_native_build( JitFunction& func, const OLattice<T>& dest )
   {
-    assert( !"ni");
-#if 0
-    JitMainLoop loop;
+#if 1
+    QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
+    llvm_start_new_function();
 
     ParamLeaf param_leaf;
 
@@ -82,14 +88,19 @@ namespace QDP {
 
     typedef typename REGType<typename FuncRet_t::Subtype_t>::Type_t REGFuncRet_t;
 
-    IndexDomainVector r_idx = loop.getIdx();
+    for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
+      std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
 
-    REGFuncRet_t src_reg;
-    src_reg.setup ( src_jit.elem( JitDeviceLayout::LayoutCoalesced , r_idx ) );
+      IndexDomainVector idx;
+      for( int i = 0 ; i < Nd ; ++i )
+	idx.push_back( make_pair( Layout::subgridLattSize()[i] , coord[i] ) );
 
-    dest_jit.elem( JitDeviceLayout::LayoutScalar , r_idx ) = src_reg;
+      REGFuncRet_t src_reg;
+      src_reg.setup ( src_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) );
 
-    loop.done();
+      dest_jit.elem( JitDeviceLayout::LayoutScalar , idx ) = src_reg;
+
+    }
 
     //QDPIO::cerr << "functionlayout_to_native_build\n";
 
@@ -103,6 +114,7 @@ namespace QDP {
   void 
   function_layout_to_native_exec( const JitFunction& function, T *dest, T *src )
   {
+    QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
     AddressLeaf addr_leaf(all);
 
     addr_leaf.setAddr( dest );
@@ -112,8 +124,9 @@ namespace QDP {
 
     QDPIO::cerr << "calling layout(to native)..\n";
 
-    assert( 0 && "ni");
+    //assert( 0 && "ni");
     //jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
+    jit_dispatch(function.func().at(0),addr_leaf);
   }
 
 }

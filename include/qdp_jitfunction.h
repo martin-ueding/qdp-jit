@@ -221,14 +221,14 @@ function_exec(const JitFunction& function,
 template<class T, class T1, class Op, class RHS>
 void function_lat_sca_build(JitFunction& func,OLattice<T>& dest, const Op& op, const QDPExpr<RHS,OScalar<T1> >& rhs)
 {
-  assert( 0 && "ni");
-#if 0
+  //assert( 0 && "ni");
+#if 1
 
 #ifdef LLVM_DEBUG
   std::cout << __PRETTY_FUNCTION__ << "\n";
 #endif
 
-  JitMainLoop loop;
+  llvm_start_new_function();
 
   ParamLeaf param_leaf;
 
@@ -240,12 +240,17 @@ void function_lat_sca_build(JitFunction& func,OLattice<T>& dest, const Op& op, c
   typedef typename ForEach<QDPExpr<RHS,OScalar<T1> >, ParamLeaf, TreeCombine>::Type_t View_t;
   View_t rhs_view(forEach(rhs, param_leaf, TreeCombine()));
 
-  IndexDomainVector idx = loop.getIdx();
+  for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-  op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ), 
-   	  forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutScalar , idx ), OpCombine()));
+    std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
 
-  loop.done();
+    IndexDomainVector idx;
+    for( int i = 0 ; i < Nd ; ++i )
+      idx.push_back( make_pair( Layout::subgridLattSize()[i] , coord[i] ) );
+
+    op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ), 
+	    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutScalar , idx ), OpCombine()));
+  }
 
   func.func().push_back( jit_function_epilogue_get("jit_lat_sca.ptx") );
 #endif
@@ -259,8 +264,8 @@ void
 function_lat_sca_exec(const JitFunction& function, 
 		      OLattice<T>& dest, const Op& op, const QDPExpr<RHS,OScalar<T1> >& rhs, const Subset& s)
 {
-  assert( 0 && "ni");
-#if 0
+  //  assert( 0 && "ni");
+#if 1
   assert( s.hasOrderedRep() );
 
   AddressLeaf addr_leaf(s);
@@ -273,11 +278,7 @@ function_lat_sca_exec(const JitFunction& function,
   std::cout << "calling eval(Lattice,Scalar)..\n";
 #endif
 
-  if (s.numSiteTable() % getDataLayoutInnerSize())
-    QDP_error_exit("number of sites in ordered subset is %d, but inner length is %d" , 
-		   s.numSiteTable() , getDataLayoutInnerSize());
-
-  jit_dispatch(function.func().at(0),s.numSiteTable(),getDataLayoutInnerSize(),s.hasOrderedRep(),s.start(),addr_leaf);
+  jit_dispatch(function.func().at(0),addr_leaf);
 #endif
 }
 

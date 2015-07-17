@@ -58,6 +58,7 @@ namespace QDP {
     bool debug_asm_write       = false;
     bool debug_loop_vectorizer = false;
     bool debug_qdp_jit_roll    = false;
+    bool debug_qdp_jit_vec     = false;
     std::string name_pretty;
     std::string name_additional;
   }
@@ -70,6 +71,10 @@ namespace QDP {
     }
     if (str.find("qdp_jit_roll") != string::npos) {
       llvm_debug::debug_qdp_jit_roll = true;
+      return;
+    }
+    if (str.find("qdp_jit_vec") != string::npos) {
+      llvm_debug::debug_qdp_jit_vec = true;
       return;
     }
     if (str.find("function-builder") != string::npos) {
@@ -1114,7 +1119,7 @@ namespace QDP {
 #endif
 
 
-#if 1
+#if 0
     static llvm::FunctionPassManager *functionPassManager = NULL;
     if (functionPassManager == NULL) {
       // llvm::PassRegistry &registry = *llvm::PassRegistry::getPassRegistry();
@@ -1132,7 +1137,7 @@ namespace QDP {
       //functionPassManager->add(llvm::createBBVectorizePass());
       //functionPassManager->add(llvm::createSLPVectorizerPass());
       ////functionPassManager->add(llvm::createLoopVectorizePass());
-      //functionPassManager->add(llvm::create_qdp_jit_vec_pass());
+      functionPassManager->add(llvm::create_qdp_jit_vec_pass());
       //functionPassManager->add(llvm::create_qdp_jit_roll_pass());   // this is a module pass, must be run separately
       //functionPassManager->add(llvm::createEarlyCSEPass());
       //functionPassManager->add(llvm::createInstructionCombiningPass());
@@ -1145,16 +1150,21 @@ namespace QDP {
 #endif
 
 
-    if (llvm_debug::debug_loop_vectorizer) {
-      if (Layout::primaryNode()) {
-	llvm::DebugFlag = true;
-	llvm::setCurrentDebugType("loop-vectorize");
-      }
-    }
+    llvm::FunctionPassManager *functionPassManager = new llvm::FunctionPassManager(Mod);
+    targetMachine->addAnalysisPasses(*functionPassManager);
+    functionPassManager->add(new llvm::DataLayoutPass());
+    functionPassManager->add(llvm::create_qdp_jit_vec_pass());
+
     if (llvm_debug::debug_qdp_jit_roll) {
       if (Layout::primaryNode()) {
 	llvm::DebugFlag = true;
 	llvm::setCurrentDebugType("qdp_jit_roll");
+      }
+    }
+    if (llvm_debug::debug_qdp_jit_vec) {
+      if (Layout::primaryNode()) {
+	llvm::DebugFlag = true;
+	llvm::setCurrentDebugType("qdp_jit_vec");
       }
     }
 
@@ -1198,7 +1208,7 @@ namespace QDP {
       QDPIO::cout << "time to vectorize func = " << sec << "s\n";
     }
 
-#if 0
+#if 1
     {
       StopWatch w;
       w.start();

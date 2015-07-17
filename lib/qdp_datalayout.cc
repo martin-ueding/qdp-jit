@@ -74,7 +74,7 @@ namespace QDP {
 	ret += index;
       }
       
-      QDPIO::cout << "linear index = " << lindex << "   total index = " << ret << "\n";
+      //QDPIO::cout << "linear index = " << lindex << "   total index = " << ret << "\n";
 
       return llvm_create_value( ret );
     }

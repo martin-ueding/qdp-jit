@@ -28,6 +28,26 @@ namespace QDP {
     int64_t hi = Layout::sitesOnNode();
     void * addr = args.addr.data();
 
+#if 0
+    if (args.addr.size() == 2) {
+      float* f0 = (float*)args.addr[0].ptr;
+      float* f1 = (float*)args.addr[1].ptr;
+
+      QDPIO::cerr << "dest after jit dispatch:\n";
+      for (int i=0;i<Layout::vol();i++) {
+	QDPIO::cerr << f0[i] << " ";
+      }
+      QDPIO::cerr << "\n";
+      QDPIO::cerr << "src before jit dispatch:\n";
+      for (int i=0;i<Layout::vol();i++) {
+	QDPIO::cerr << f1[i] << " ";
+      }
+      QDPIO::cerr << "\n";
+    }
+#endif
+
+
+
     //QDPIO::cerr << "dispatch... " << args.addr.size() << "\n";
 
     // #pragma omp parallel shared(site_count, threads_num, ordered, start, addr) private(myId, lo, hi) default(shared)
@@ -42,6 +62,19 @@ namespace QDP {
     //FP( lo , hi , myId , ordered, start, addr );
     //FP( addr );
     FP( lo, hi, addr );
+
+#if 0
+    if (args.addr.size() == 2) {
+      float* f0 = (float*)args.addr[0].ptr;
+      float* f1 = (float*)args.addr[1].ptr;
+
+      QDPIO::cerr << "dest after jit dispatch:\n";
+      for (int i=0;i<Layout::vol();i++) {
+	QDPIO::cerr << f0[i] << " ";
+      }
+      QDPIO::cerr << "\n";
+    }
+#endif
 
     //    }
 

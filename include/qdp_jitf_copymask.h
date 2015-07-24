@@ -9,10 +9,7 @@ namespace QDP {
   void
   function_copymask_build( JitFunction& func, OLattice<T>& dest , const OLattice<T1>& mask , const OLattice<T>& src )
   {
-    assert( 0 && "ni");
-#if 0
-
-    JitMainLoop loop;
+    llvm_start_new_function();
 
     ParamLeaf param_leaf;
 
@@ -26,19 +23,23 @@ namespace QDP {
     typedef typename REGType<typename FuncRet_t::Subtype_t>::Type_t REGFuncRet_t;
     typedef typename REGType<typename FuncRet1_t::Subtype_t>::Type_t REGFuncRet1_t;
 
-    IndexDomainVector idx = loop.getIdx();
+    for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-    REGFuncRet_t src_reg;
-    REGFuncRet1_t mask_reg;
-    src_reg.setup ( src_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) );
-    mask_reg.setup( mask_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) );
+      std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
 
-    copymask( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) , mask_reg , src_reg );
+      IndexDomainVector idx;
+      for( int i = 0 ; i < Nd ; ++i )
+	idx.push_back( make_pair( Layout::subgridLattSize()[i] , coord[i] ) );
 
-    loop.done();
+      REGFuncRet_t src_reg;
+      REGFuncRet1_t mask_reg;
+      src_reg.setup ( src_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) );
+      mask_reg.setup( mask_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) );
+
+      copymask( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ) , mask_reg , src_reg );
+    }
 
     func.func().push_back( jit_function_epilogue_get("jit_copymask.ptx") );
-#endif
   }
 
 
@@ -53,14 +54,12 @@ namespace QDP {
     int junk_1 = forEach(src, addr_leaf, NullCombine());
     int junk_2 = forEach(mask, addr_leaf, NullCombine());
 
-    int th_count = Layout::sitesOnNode();
-
 #ifdef LLVM_DEBUG
     std::cout << "calling copymask(Lattice)..\n";
 #endif
 
-    assert( 0 && "ni");
     //jit_dispatch(function.func().at(0),th_count,getDataLayoutInnerSize(),true,0,addr_leaf);
+    jit_dispatch(function.func().at(0),addr_leaf);
   }
 
 }

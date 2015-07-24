@@ -81,6 +81,7 @@ function_exec(const JitFunction& function,
   int junk_rhs = forEach(rhs, addr_leaf , NullCombine());
 
   jit_dispatch(function.func().at(0),addr_leaf);
+
 #endif
 }
 
@@ -221,12 +222,9 @@ function_exec(const JitFunction& function,
 template<class T, class T1, class Op, class RHS>
 void function_lat_sca_build(JitFunction& func,OLattice<T>& dest, const Op& op, const QDPExpr<RHS,OScalar<T1> >& rhs)
 {
-  //assert( 0 && "ni");
-#if 1
-
 #ifdef LLVM_DEBUG
-  std::cout << __PRETTY_FUNCTION__ << "\n";
 #endif
+  std::cout << __PRETTY_FUNCTION__ << "\n";
 
   llvm_start_new_function();
 
@@ -253,7 +251,6 @@ void function_lat_sca_build(JitFunction& func,OLattice<T>& dest, const Op& op, c
   }
 
   func.func().push_back( jit_function_epilogue_get("jit_lat_sca.ptx") );
-#endif
 }
 
 
@@ -264,8 +261,8 @@ void
 function_lat_sca_exec(const JitFunction& function, 
 		      OLattice<T>& dest, const Op& op, const QDPExpr<RHS,OScalar<T1> >& rhs, const Subset& s)
 {
-  //  assert( 0 && "ni");
-#if 1
+  std::cout << __PRETTY_FUNCTION__ << "\n";
+
   assert( s.hasOrderedRep() );
 
   AddressLeaf addr_leaf(s);
@@ -279,7 +276,6 @@ function_lat_sca_exec(const JitFunction& function,
 #endif
 
   jit_dispatch(function.func().at(0),addr_leaf);
-#endif
 }
 
 

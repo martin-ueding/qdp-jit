@@ -457,12 +457,14 @@ namespace QDP {
       oss << "arg" << Idx;
       AI->setName( oss.str() );
 
+#if 0
       if ( vecParamType.at(Idx)->isPointerTy() ) {
       	llvm::AttrBuilder B;
       	B.addAttribute(llvm::Attribute::NoAlias);
 	//B.addAlignmentAttr( 32 );
       	AI->addAttr( llvm::AttributeSet::get( llvm::getGlobalContext() , 0 ,  B ) );
       }
+#endif
 
       vecArgument.push_back( AI );
     }
@@ -1137,7 +1139,7 @@ namespace QDP {
       //functionPassManager->add(llvm::createBBVectorizePass());
       //functionPassManager->add(llvm::createSLPVectorizerPass());
       ////functionPassManager->add(llvm::createLoopVectorizePass());
-      functionPassManager->add(llvm::create_qdp_jit_vec_pass());
+      //functionPassManager->add(llvm::create_qdp_jit_vec_pass());
       //functionPassManager->add(llvm::create_qdp_jit_roll_pass());   // this is a module pass, must be run separately
       //functionPassManager->add(llvm::createEarlyCSEPass());
       //functionPassManager->add(llvm::createInstructionCombiningPass());
@@ -1208,7 +1210,7 @@ namespace QDP {
       QDPIO::cout << "time to vectorize func = " << sec << "s\n";
     }
 
-#if 1
+#if 0
     {
       StopWatch w;
       w.start();

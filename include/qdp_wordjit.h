@@ -238,20 +238,24 @@ namespace QDP {
   inline
   void copymask(WordJIT<T>& d, const WordREG<T1>& mask, const WordREG<T2>& s1)
   {
-    llvm::BasicBlock * block_copy      = llvm_new_basic_block();
-    llvm::BasicBlock * block_not_copy  = llvm_new_basic_block();
-    llvm::BasicBlock * block_copy_exit = llvm_new_basic_block();
-    llvm_cond_branch( mask.get_val() , block_copy , block_not_copy );
-    {
-      llvm_set_insert_point(block_not_copy);
-      llvm_branch( block_copy_exit );
-    }
-    {
-      llvm_set_insert_point(block_copy);
-      d = s1;
-      llvm_branch( block_copy_exit );
-    }
-    llvm_set_insert_point(block_copy_exit);
+    llvm::Type* T2_int = llvm::Type::getIntNTy(llvm::getGlobalContext(), sizeof(T2)*8 );
+    llvm::Value* mask_splat = builder->CreateSExt( mask.get_val() , T2_int );
+    llvm::Value* mask_splat_not = builder->CreateXor( mask_splat , llvm::APInt(sizeof(T2)*8,-1,true) );
+
+    llvm::Value* s1_int = builder->CreateBitCast( s1.get_val() , T2_int );
+
+    WordREG<T2> d_read_copy;
+    d_read_copy.setup(d);
+    llvm::Value* d_int = builder->CreateBitCast( d_read_copy.get_val() , T2_int );
+    
+    llvm::Value* s1_and = builder->CreateAnd( s1_int , mask_splat );
+    llvm::Value* d_and  = builder->CreateAnd( d_int  , mask_splat_not );
+
+    llvm::Value* d_or_s1  = builder->CreateOr( d_and  , s1_and );
+
+    llvm::Value* out = builder->CreateBitCast( d_or_s1 , llvm_type<T>::value );
+
+    llvm_store_ptr_idx( out , d.getBaseReg() , d.getOffset() );
   }
 
 

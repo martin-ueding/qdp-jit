@@ -785,13 +785,13 @@ namespace QDP {
 
 
   template<> ParamRef llvm_add_param<bool>() { 
-    vecParamType.push_back( llvm::Type::getInt1Ty(llvm::getGlobalContext()) );
+    vecParamType.push_back( llvm::Type::getInt8Ty(llvm::getGlobalContext()) );
     return vecParamType.size()-1;
     // llvm::Argument * u8 = new llvm::Argument( llvm::Type::getInt8Ty(llvm::getGlobalContext()) , param_next() , mainFunc );
     // return llvm_cast( llvm_type<bool>::value , u8 );
   }
   template<> ParamRef llvm_add_param<bool*>() { 
-    vecParamType.push_back( llvm::Type::getInt1PtrTy(llvm::getGlobalContext()) );
+    vecParamType.push_back( llvm::Type::getInt8PtrTy(llvm::getGlobalContext()) );
     return vecParamType.size()-1;
   }
   template<> ParamRef llvm_add_param<int64_t>() { 
@@ -823,6 +823,8 @@ namespace QDP {
     return vecParamType.size()-1;
   }
 
+
+  
 
 
   llvm::BasicBlock * llvm_new_basic_block()
@@ -1156,7 +1158,7 @@ namespace QDP {
     targetMachine->addAnalysisPasses(*functionPassManager);
     functionPassManager->add(new llvm::DataLayoutPass());
     functionPassManager->add(llvm::create_qdp_jit_vec_pass());
-
+    
     if (llvm_debug::debug_qdp_jit_roll) {
       if (Layout::primaryNode()) {
 	llvm::DebugFlag = true;

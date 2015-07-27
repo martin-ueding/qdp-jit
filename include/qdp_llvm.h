@@ -87,7 +87,7 @@ namespace QDP {
   extern llvm::Function    *mainFunc;
   extern llvm::Function    *mainFunc_extern;
   extern llvm::Module      *Mod;
-
+  extern llvm::IRBuilder<> *builder;
 
   void llvm_set_debug( const char * str );
   void llvm_debug_write_set_name( const char* pretty, const char* additional );

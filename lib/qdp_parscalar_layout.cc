@@ -250,7 +250,7 @@ namespace QDP
       //initDefaultMaps();  // not needed
       
       // Initialize RNG
-      RNG::initDefaultRNG();
+      //RNG::initDefaultRNG();
       
       // Set default profile level
       setProfileLevel(getProgramProfileLevel());

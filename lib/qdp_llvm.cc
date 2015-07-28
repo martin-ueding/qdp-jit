@@ -49,6 +49,11 @@ namespace QDP {
     int label_counter;
   }
 
+  namespace llvm_opt {
+    size_t vec_len;
+    bool vec_len_set=false;
+  }
+
   namespace llvm_debug {
     bool debug_func_build      = false;
     bool debug_func_dump_post  = false;
@@ -61,6 +66,12 @@ namespace QDP {
     bool debug_qdp_jit_vec     = false;
     std::string name_pretty;
     std::string name_additional;
+  }
+
+  void llvm_set_veclen(int veclen)
+  {
+    llvm_opt::vec_len     = (size_t)veclen;
+    llvm_opt::vec_len_set = true;
   }
 
   void llvm_set_debug( const char * c_str ) {
@@ -1157,7 +1168,11 @@ namespace QDP {
     llvm::FunctionPassManager *functionPassManager = new llvm::FunctionPassManager(Mod);
     targetMachine->addAnalysisPasses(*functionPassManager);
     functionPassManager->add(new llvm::DataLayoutPass());
-    functionPassManager->add(llvm::create_qdp_jit_vec_pass());
+    if (llvm_opt::vec_len_set)
+      functionPassManager->add(llvm::create_qdp_jit_vec_pass(llvm_opt::vec_len));
+    else
+      functionPassManager->add(llvm::create_qdp_jit_vec_pass());
+
     
     if (llvm_debug::debug_qdp_jit_roll) {
       if (Layout::primaryNode()) {
@@ -1212,7 +1227,7 @@ namespace QDP {
       QDPIO::cout << "time to vectorize func = " << sec << "s\n";
     }
 
-#if 0
+#if 1
     {
       StopWatch w;
       w.start();

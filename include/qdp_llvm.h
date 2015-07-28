@@ -79,6 +79,7 @@ namespace QDP {
     extern bool debug_loop_vectorizer;
   }
 
+  void llvm_set_veclen(int veclen);
 
   typedef int ParamRef;
 

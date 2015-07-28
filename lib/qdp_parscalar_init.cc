@@ -342,6 +342,12 @@ namespace QDP {
 			  sscanf((*argv)[++i], "%s", &tmp);
 			  llvm_append_mattr(tmp);
 			}
+			else if (strcmp((*argv)[i], "-veclen")==0) 
+			{
+			  int veclen;
+			  sscanf((*argv)[++i], "%d", &veclen);
+			  llvm_set_veclen(veclen);
+			}
 			else if (strcmp((*argv)[i], "-llvm-cl")==0) 
 			{
 			  char tmp[1024];

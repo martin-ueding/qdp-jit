@@ -279,6 +279,7 @@ namespace QDP {
 		strncpy(rtinode, "your_local_food_store", maxlen);
 		bool jit_layout_set=false;
 		char llvm_cl[1024] = "";
+		int veclen=-1;
 		
 		// Usage
 		if (Layout::primaryNode())  {
@@ -344,9 +345,7 @@ namespace QDP {
 			}
 			else if (strcmp((*argv)[i], "-veclen")==0) 
 			{
-			  int veclen;
 			  sscanf((*argv)[++i], "%d", &veclen);
-			  llvm_set_veclen(veclen);
 			}
 			else if (strcmp((*argv)[i], "-llvm-cl")==0) 
 			{
@@ -437,6 +436,10 @@ namespace QDP {
 #endif
 
 		QDP_initialize_QMP(argc, argv);
+
+		if (veclen!=1) {
+		  llvm_set_veclen(veclen);
+		}
 
 		if ( strlen(llvm_cl) > 0 ) {
 		  char* my_argv[2];

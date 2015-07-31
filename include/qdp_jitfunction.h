@@ -43,7 +43,8 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
 
   for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-    std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    //std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    multi1d<int> coord = crtesn( vol , Layout::subgridLattSize() );
 
     IndexDomainVector idx;
     for( int i = 0 ; i < Nd ; ++i )
@@ -240,7 +241,8 @@ void function_lat_sca_build(JitFunction& func,OLattice<T>& dest, const Op& op, c
 
   for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-    std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    //std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    multi1d<int> coord = crtesn( vol , Layout::subgridLattSize() );
 
     IndexDomainVector idx;
     for( int i = 0 ; i < Nd ; ++i )

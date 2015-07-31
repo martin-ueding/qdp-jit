@@ -212,6 +212,7 @@ namespace QDP {
 
 #include "qdp_dispatch.h"
 
+#include "qdp_util.h"
 #include "qdp_jitfunction.h"
 #include "qdp_jitf_copymask.h"
 #include "qdp_jitf_layout.h"

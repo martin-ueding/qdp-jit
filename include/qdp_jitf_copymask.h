@@ -27,7 +27,8 @@ namespace QDP {
 
     for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-      std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+      //std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+      multi1d<int> coord = crtesn( vol , Layout::subgridLattSize() );
 
       IndexDomainVector idx;
       for( int i = 0 ; i < Nd ; ++i )

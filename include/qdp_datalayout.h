@@ -12,8 +12,13 @@ namespace QDP {
   void QDP_print_jit_datalayout();
   //llvm::Value * datalayout_stack(IndexDomainVector a);
 
-  void setup_nodevolume_loop_SIMD();
-  std::array<int,Nd> volume_loop_linear_2_coord( int linear );
+  void set_datalayout_packed();
+  void set_datalayout_packed_create();
+
+  void set_datalayout_subnode();
+
+  // void setup_nodevolume_loop_SIMD();
+  // std::array<int,Nd> volume_loop_linear_2_coord( int linear );
   //std::array<int,Nd> volume_loop_linear_2_coord( int linear );
 
 } // namespace QDP

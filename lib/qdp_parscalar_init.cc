@@ -30,6 +30,7 @@ namespace QDP {
   bool setIOGeomP = false;
   multi1d<int> logical_geom(Nd);   // apriori logical geometry of the machine
   multi1d<int> logical_nodegeom(Nd);   // apriori logical geometry of the node
+  multi1d<int> logical_packedsize(Nd);   // apriori logical geometry of the node
   multi1d<int> logical_iogeom(Nd); // apriori logical 	
 
 
@@ -279,6 +280,7 @@ namespace QDP {
 		strncpy(rtinode, "your_local_food_store", maxlen);
 		bool jit_layout_set=false;
 		char llvm_cl[1024] = "";
+		std::string str_dl;
 		
 		// Usage
 		if (Layout::primaryNode())  {
@@ -348,6 +350,12 @@ namespace QDP {
 			  sscanf((*argv)[++i], "%d", &veclen);
 			  llvm_set_veclen(veclen);
 			}
+			else if (strcmp((*argv)[i], "-dl")==0) 
+			{
+			  char tmp[1024];
+			  sscanf((*argv)[++i], "%s", &tmp);
+			  str_dl = std::string((char*)tmp);
+			}
 			else if (strcmp((*argv)[i], "-llvm-cl")==0) 
 			{
 			  char tmp[1024];
@@ -372,15 +380,21 @@ namespace QDP {
 			}
 			else if (strcmp((*argv)[i], "-nodegeom")==0) 
 			{
-			  std::cout << "nodegeom: ";
 				for(int j=0; j < Nd; j++) 
 				{
 					int uu;
 					sscanf((*argv)[++i], "%d", &uu);
 					logical_nodegeom[j] = uu;
-					std::cout << uu << " ";
 				}
-			  std::cout << "\n";
+			}
+			else if (strcmp((*argv)[i], "-packedsize")==0) 
+			{
+				for(int j=0; j < Nd; j++) 
+				{
+					int uu;
+					sscanf((*argv)[++i], "%d", &uu);
+					logical_packedsize[j] = uu;
+				}
 			}
 			else if (strcmp((*argv)[i], "-iogeom")==0) 
 			{
@@ -438,6 +452,17 @@ namespace QDP {
 
 		QDP_initialize_QMP(argc, argv);
 
+		Layout::layout_type=0;
+		if ( str_dl.length() > 0 ) {
+		  if (str_dl=="subnode") {
+		    set_datalayout_subnode();
+		  } else if (str_dl=="packed") {
+		    set_datalayout_packed();
+		  } else {
+		    QDP_error_exit("datalayout either 'subnode', 'packed' expected");
+		  }
+		}
+
 		if ( strlen(llvm_cl) > 0 ) {
 		  char* my_argv[2];
 		  my_argv[0] = (char*)"prg";
@@ -486,6 +511,8 @@ namespace QDP {
 	  // Always set the logical node geometry, i.e. the grid of subnodes with a node
 	  // 
 	  Layout::jit_set_logical_nodegeom(logical_nodegeom);
+
+	  Layout::jit_set_packedsize(logical_packedsize);
 
 
 		

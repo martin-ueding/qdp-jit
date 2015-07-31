@@ -70,6 +70,7 @@ namespace QDP {
 
   void llvm_set_veclen(int veclen)
   {
+    QDPIO::cout << "Setting the vectorizer's vector length to " << veclen << "\n";
     llvm_opt::vec_len     = (size_t)veclen;
     llvm_opt::vec_len_set = true;
   }

@@ -113,6 +113,7 @@ namespace RNG
     LatticeSeed laamult;
     LatticeBoolean lbit;
 
+
     for(int i=0; i<nbits; ++i)
     {
       lbit = (lexoc & 1) > 0;

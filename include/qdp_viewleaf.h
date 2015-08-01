@@ -24,8 +24,14 @@ struct LeafFunctor<QDPTypeJIT<T,OScalarJIT<T> >, ViewLeaf>
   inline static
   Type_t apply(const QDPTypeJIT<T,OScalarJIT<T> > & s, const ViewLeaf& v)
   {
+    IndexDomainVector idx0;
+    for( int i = 0 ; i < Nd ; ++i ) {
+      idx0.push_back( make_pair( Layout::subgridLattSize()[i] , 0 ) );
+    }
+
     Type_t reg;
-    reg.setup( s.elem() );
+    reg.setup( s.elem( v.getLayout() , idx0 ) );
+    //reg.setup( s.elem() );
     return reg;
   }
 };
@@ -38,8 +44,14 @@ struct LeafFunctor<OScalarJIT<T>, ViewLeaf>
   inline static
   Type_t apply(const OScalarJIT<T> & s, const ViewLeaf& v)
   {
+    IndexDomainVector idx0;
+    for( int i = 0 ; i < Nd ; ++i ) {
+      idx0.push_back( make_pair( Layout::subgridLattSize()[i] , 0 ) );
+    }
+
     Type_t reg;
-    reg.setup( s.elem() );
+    reg.setup( s.elem( v.getLayout() , idx0 ) );
+    //reg.setup( s.elem() );
     return reg;
   }
 };

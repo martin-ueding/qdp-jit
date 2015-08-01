@@ -60,6 +60,11 @@ namespace QDP {
       return llvm_create_value( order );
     } else {
       // JitDeviceLayout::LayoutScalar	
+
+      // for (auto& g:a) {
+      // 	QDPIO::cout << g.first << " " << g.second << "\n";
+      // }
+
       multi1d<int> coord(Nd);
       for ( int i = 0 ; i < Nd ; i++ )
 	coord[i] = a[i].second;
@@ -69,11 +74,12 @@ namespace QDP {
       for ( int i = Nd ; i < a.size() ; i++ ) {
 	int domain = a[i].first;
 	int index  = a[i].second;
+	//	QDPIO::cout << "first = " << domain << "   second = " << index << "\n";
 	ret *= domain;
 	ret += index;
       }
       
-      //QDPIO::cout << "linear index = " << lindex << "   total index = " << ret << "\n";
+      //      QDPIO::cout << "linear index = " << lindex << "   total index = " << ret << "\n";
 
       return llvm_create_value( ret );
     }

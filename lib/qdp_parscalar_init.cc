@@ -458,13 +458,17 @@ namespace QDP {
 
 		QDP_initialize_QMP(argc, argv);
 
-		Layout::jit_set_packedsize( packedsize );
 
 		Layout::layout_type=0;
 		if ( str_dl.length() > 0 ) {
 		  if (str_dl=="subnode") {
 		    set_datalayout_subnode();
 		  } else if (str_dl=="packed") {
+		    Layout::jit_set_packedsize( packedsize );
+		    int pvol=1;
+		    for (int i=0;i<Nd;++i)
+		      pvol*=packedsize[i];
+		    llvm_set_veclen(pvol);
 		    set_datalayout_packed();
 		  } else {
 		    QDP_error_exit("datalayout either 'subnode', 'packed' expected");

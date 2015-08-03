@@ -73,7 +73,7 @@ function_exec(const JitFunction& function,
 	      const Subset& s)
 {
 #if 1
-  QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
+  //QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
 
   AddressLeaf addr_leaf(s);
 

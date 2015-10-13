@@ -70,6 +70,7 @@ namespace QDP {
 
   void llvm_set_veclen(int veclen)
   {
+    QDPIO::cout << "Setting the vectorizer's vector length to " << veclen << "\n";
     llvm_opt::vec_len     = (size_t)veclen;
     llvm_opt::vec_len_set = true;
   }
@@ -1168,11 +1169,12 @@ namespace QDP {
     llvm::FunctionPassManager *functionPassManager = new llvm::FunctionPassManager(Mod);
     targetMachine->addAnalysisPasses(*functionPassManager);
     functionPassManager->add(new llvm::DataLayoutPass());
+#if 1
     if (llvm_opt::vec_len_set)
       functionPassManager->add(llvm::create_qdp_jit_vec_pass(llvm_opt::vec_len));
     else
       functionPassManager->add(llvm::create_qdp_jit_vec_pass());
-
+#endif
     
     if (llvm_debug::debug_qdp_jit_roll) {
       if (Layout::primaryNode()) {

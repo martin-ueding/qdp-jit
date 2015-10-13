@@ -43,7 +43,8 @@ void function_build(JitFunction& func, OLattice<T>& dest, const Op& op, const QD
 
   for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-    std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    //std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    multi1d<int> coord = crtesn( vol , Layout::subgridLattSize() );
 
     IndexDomainVector idx;
     for( int i = 0 ; i < Nd ; ++i )
@@ -72,7 +73,7 @@ function_exec(const JitFunction& function,
 	      const Subset& s)
 {
 #if 1
-  QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
+  //QDPIO::cerr << __PRETTY_FUNCTION__ << "\n";
 
   AddressLeaf addr_leaf(s);
 
@@ -81,6 +82,12 @@ function_exec(const JitFunction& function,
   int junk_rhs = forEach(rhs, addr_leaf , NullCombine());
 
   jit_dispatch(function.func().at(0),addr_leaf);
+
+  // typedef typename WordType<T>::Type_t WT;
+  // WT* wt = (WT*)dest.getFjit();
+  // for (int i=0;i<16;++i)
+  //   QDPIO::cout << wt[i] << " ";
+  // QDPIO::cout << "\n";
 
 #endif
 }
@@ -240,14 +247,20 @@ void function_lat_sca_build(JitFunction& func,OLattice<T>& dest, const Op& op, c
 
   for ( int vol = 0 ; vol < Layout::sitesOnNode() ; ++vol ) {
 
-    std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    //std::array<int,Nd> coord = volume_loop_linear_2_coord(vol);
+    multi1d<int> coord = crtesn( vol , Layout::subgridLattSize() );
 
     IndexDomainVector idx;
-    for( int i = 0 ; i < Nd ; ++i )
+    IndexDomainVector idx0;
+
+    for( int i = 0 ; i < Nd ; ++i ) {
       idx.push_back( make_pair( Layout::subgridLattSize()[i] , coord[i] ) );
+      //QDPIO::cout << "push into idx0 " << Layout::subgridLattSize()[i] << " 0\n";
+      idx0.push_back( make_pair( Layout::subgridLattSize()[i] , 0 ) );
+    }
 
     op_jit( dest_jit.elem( JitDeviceLayout::LayoutCoalesced , idx ), 
-	    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutScalar , idx ), OpCombine()));
+	    forEach(rhs_view, ViewLeaf( JitDeviceLayout::LayoutScalar , idx0 ), OpCombine()));
   }
 
   func.func().push_back( jit_function_epilogue_get("jit_lat_sca.ptx") );

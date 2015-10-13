@@ -78,6 +78,7 @@ namespace QDP {
       return F;
     }
 
+#if 0
     T& elem() {
       IndexDomainVector args;
       // args.push_back( make_pair( 1 , llvm_create_value(0) ) );
@@ -99,7 +100,7 @@ namespace QDP {
       //F.setup(getThreadedBase( JitDeviceLayout::LayoutScalar ),llvm_create_value(1),llvm_create_value(0));
       return F;
     }
-
+#endif
 
   private:
     ParamRef    base_m;

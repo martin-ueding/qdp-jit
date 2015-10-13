@@ -30,8 +30,8 @@ namespace QDP {
   bool setIOGeomP = false;
   multi1d<int> logical_geom(Nd);   // apriori logical geometry of the machine
   multi1d<int> logical_nodegeom(Nd);   // apriori logical geometry of the node
+  multi1d<int> logical_packedsize(Nd);   // apriori logical geometry of the node
   multi1d<int> logical_iogeom(Nd); // apriori logical 	
-  multi1d<int> packedsize(Nd);   // apriori logical geometry of the node
 
 
 #if 1
@@ -280,10 +280,11 @@ namespace QDP {
 		strncpy(rtinode, "your_local_food_store", maxlen);
 		bool jit_layout_set=false;
 		char llvm_cl[1024] = "";
+<<<<<<< HEAD
 		std::string str_dl;
-
-		for(int j=0; j < Nd; j++) 
-		  packedsize[j] = 1;
+=======
+		int veclen=-1;
+>>>>>>> e579a75b57600fc98a4b237a710b73f015a1cc20
 		
 		// Usage
 		if (Layout::primaryNode())  {
@@ -349,9 +350,7 @@ namespace QDP {
 			}
 			else if (strcmp((*argv)[i], "-veclen")==0) 
 			{
-			  int veclen;
 			  sscanf((*argv)[++i], "%d", &veclen);
-			  llvm_set_veclen(veclen);
 			}
 			else if (strcmp((*argv)[i], "-dl")==0) 
 			{
@@ -383,24 +382,21 @@ namespace QDP {
 			}
 			else if (strcmp((*argv)[i], "-nodegeom")==0) 
 			{
-			  std::cout << "nodegeom: ";
 				for(int j=0; j < Nd; j++) 
 				{
 					int uu;
 					sscanf((*argv)[++i], "%d", &uu);
 					logical_nodegeom[j] = uu;
-					std::cout << uu << " ";
 				}
-			  std::cout << "\n";
 			}
-			else if (strcmp((*argv)[i], "-packedsize")==0)
+			else if (strcmp((*argv)[i], "-packedsize")==0) 
 			{
-			  for(int j=0; j < Nd; j++) 
-			    {
-			      int uu;
-			      sscanf((*argv)[++i], "%d", &uu);
-			      packedsize[j] = uu;
-			    }
+				for(int j=0; j < Nd; j++) 
+				{
+					int uu;
+					sscanf((*argv)[++i], "%d", &uu);
+					logical_packedsize[j] = uu;
+				}
 			}
 			else if (strcmp((*argv)[i], "-iogeom")==0) 
 			{
@@ -458,21 +454,20 @@ namespace QDP {
 
 		QDP_initialize_QMP(argc, argv);
 
-
+<<<<<<< HEAD
 		Layout::layout_type=0;
 		if ( str_dl.length() > 0 ) {
 		  if (str_dl=="subnode") {
 		    set_datalayout_subnode();
 		  } else if (str_dl=="packed") {
-		    Layout::jit_set_packedsize( packedsize );
-		    int pvol=1;
-		    for (int i=0;i<Nd;++i)
-		      pvol*=packedsize[i];
-		    llvm_set_veclen(pvol);
 		    set_datalayout_packed();
 		  } else {
 		    QDP_error_exit("datalayout either 'subnode', 'packed' expected");
 		  }
+=======
+		if (veclen!=1) {
+		  llvm_set_veclen(veclen);
+>>>>>>> e579a75b57600fc98a4b237a710b73f015a1cc20
 		}
 
 		if ( strlen(llvm_cl) > 0 ) {
@@ -523,6 +518,8 @@ namespace QDP {
 	  // Always set the logical node geometry, i.e. the grid of subnodes with a node
 	  // 
 	  Layout::jit_set_logical_nodegeom(logical_nodegeom);
+
+	  Layout::jit_set_packedsize(logical_packedsize);
 
 
 		

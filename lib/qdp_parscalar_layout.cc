@@ -75,6 +75,7 @@ namespace QDP
       multi1d<int> iogrid;
 
       multi1d<int> logical_nodegeom;
+      multi1d<int> packedsize;
 
       //! grid of subnodes within a node
       multi1d<int> subnode_nrow;
@@ -99,6 +100,11 @@ namespace QDP
     int jit_get_number_of_subnodes_per_node()
     {
       return _layout.number_of_subnodes_per_node;
+    }
+
+    void jit_set_packedsize( const multi1d<int>& packedsize_ )
+    {
+      _layout.packedsize = packedsize_;
     }
 
 
@@ -137,6 +143,9 @@ namespace QDP
 
     //! Grid of a subnode
     const multi1d<int>& subnodeLattSize() {return _layout.subnode_nrow;}
+
+    //! Grid of a subnode
+    const multi1d<int>& packedLattSize() {return _layout.packedsize;}
 
     //! Returns the node number of this node
     int nodeNumber() {return _layout.node_rank;}
@@ -250,7 +259,7 @@ namespace QDP
       //initDefaultMaps();  // not needed
       
       // Initialize RNG
-      //RNG::initDefaultRNG();
+      RNG::initDefaultRNG();
       
       // Set default profile level
       setProfileLevel(getProgramProfileLevel());
@@ -400,7 +409,12 @@ namespace QDP
 	_layout.subnode_nrow[j] = _layout.subgrid_nrow[j] / _layout.logical_nodegeom[j];
       }
 
-      setup_nodevolume_loop_SIMD();
+      if (Layout::layout_type == 1)
+	set_datalayout_packed_create();
+      else {
+	QDP_error_exit("unknown layout type");
+	//setup_nodevolume_loop_SIMD();
+      }
 
       // Initialize various defaults
       initDefaults();

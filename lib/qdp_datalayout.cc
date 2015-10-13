@@ -23,7 +23,72 @@ namespace QDP {
 
 
 
+  namespace Layout {
+    std::vector<int> layout_map;
+  }
+
+  
+
+
+
 #if 1
+  //
+  // Datalayout which is SIMD friendly for shift operations
+  //
+  llvm::Value * datalayout( JitDeviceLayout::LayoutEnum lay , IndexDomainVector a ) {
+    if (lay == JitDeviceLayout::LayoutCoalesced) {
+      assert( a.size() == 3+Nd && "IndexDomainVector size not 3+Nd" );
+
+      std::array<int,Nd> c;  // coordinate within the subgrid
+      for(int i=0;i<Nd;++i) 
+	c[i] = a[i].second;
+
+      int linear_index = jit_local_site( c , Layout::subgridLattSize() );
+      assert( linear_index < Layout::layout_map.size() );
+      int space_time_index = Layout::layout_map[ linear_index ];
+
+      int order = 0;
+      for( int mmu = a.size() - 1 ; mmu >= Nd+1 ; --mmu ) {
+	order = a[mmu-1].first*(a[mmu].second + order);
+      }
+      order += a[Nd].second;
+
+      //QDPIO::cout << "order: " << order << "    space_time = " << space_time_index << "\n";
+
+      order = order * Layout::sitesOnNode() + space_time_index;
+
+      return llvm_create_value( order );
+    } else {
+      // JitDeviceLayout::LayoutScalar	
+
+      // for (auto& g:a) {
+      // 	QDPIO::cout << g.first << " " << g.second << "\n";
+      // }
+
+      multi1d<int> coord(Nd);
+      for ( int i = 0 ; i < Nd ; i++ )
+	coord[i] = a[i].second;
+      int lindex = Layout::linearSiteIndex(coord);
+
+      int ret = lindex;
+      for ( int i = Nd ; i < a.size() ; i++ ) {
+	int domain = a[i].first;
+	int index  = a[i].second;
+	//	QDPIO::cout << "first = " << domain << "   second = " << index << "\n";
+	ret *= domain;
+	ret += index;
+      }
+      
+      //      QDPIO::cout << "linear index = " << lindex << "   total index = " << ret << "\n";
+
+      return llvm_create_value( ret );
+    }
+  }
+#endif
+
+
+
+#if 0
   //
   // Datalayout which is SIMD friendly for shift operations
   //
@@ -305,15 +370,15 @@ namespace QDP {
 
 
 
-  std::vector< std::array<int,Nd> > jit_volume_loop;
+  //std::vector< std::array<int,Nd> > jit_volume_loop;
 
-  std::array<int,Nd> volume_loop_linear_2_coord( int linear )
-  {
-    //QDPIO::cout << linear << " " << jit_volume_loop.size() << "\n";
-    assert( linear < jit_volume_loop.size() );
-    assert( jit_volume_loop.size() > 0 );
-    return jit_volume_loop[linear];
-  }
+  // std::array<int,Nd> volume_loop_linear_2_coord( int linear )
+  // {
+  //   //QDPIO::cout << linear << " " << jit_volume_loop.size() << "\n";
+  //   assert( linear < jit_volume_loop.size() );
+  //   assert( jit_volume_loop.size() > 0 );
+  //   return jit_volume_loop[linear];
+  // }
 
 
   bool lexico_percolate( std::array<int,Nd>& coord, const multi1d<int>& bounds )
@@ -332,53 +397,159 @@ namespace QDP {
     return ret;
   }
 
-
-  void setup_nodevolume_loop_SIMD()
+  void set_datalayout_subnode() 
   {
-    QDPIO::cout << "Setting up node volume loop, SIMD friendly version\n";
-    
-    std::array<int,Nd> lc;  // coordinate within a subnode
-    std::array<int,Nd> sn;  // coordinate of the subnode
-    lc.fill(0);
-    sn.fill(0);
 
-    jit_volume_loop.clear();
-    int vol(0);
+  }
 
-    do
+  void set_datalayout_packed_create()
+  {
+    QDPIO::cout << "Creating PACKED data layout\n";
+
+    multi1d<int> modsize(Nd);
+    int packed_vol = 1;
+    for (int i=0;i<Nd;++i) {
+      assert( Layout::packedLattSize()[i] > 0 );
+      assert( Layout::subgridLattSize()[i] % Layout::packedLattSize()[i] == 0 );
+      modsize[i] = Layout::subgridLattSize()[i] / Layout::packedLattSize()[i];
+      packed_vol *= Layout::packedLattSize()[i];
+    }
+
+    QDPIO::cout << "PACKED vol = " << packed_vol << "\n";
+
+    std::array<int,Nd> c;  // coordinate within the subgrid block
+    c.fill(0);
+    int vol=0;
+
+    do 
       {
-	if (lexico_percolate( sn , Layout::nodeGeom()) ) {
-	  lc[0]++;
-	  if (lexico_percolate( lc , Layout::subnodeLattSize() ))
-	    QDP_error_exit("Didn't expect the subnode coordinate to percolate.");
+	if (lexico_percolate( c , Layout::subgridLattSize() ) ) {
+	  QDP_error_exit("Didn't expect the c coordinate to percolate.");
 	}
 
-	std::array<int,Nd> coord;
+	std::array<int,Nd> p;  // coordinate within the PACKED block
+	std::array<int,Nd> b;  // coordinate of the block
 
-	for(int i=0;i<Nd;++i) {
-	  coord[i] = sn[i] * Layout::subnodeLattSize()[i] + lc[i];
-	  //QDPIO::cout << coord[i] << " ";
+	for (int i=0;i<Nd;++i) {
+	  b[i] = c[i] / Layout::packedLattSize()[i];
+	  p[i] = c[i] % Layout::packedLattSize()[i];
 	}
-	//QDPIO::cout << "\n";
 
-#if 0
-	// Paranoic test
-	for (auto& s : jit_volume_loop)
-	  if ( s == coord )
-	    QDP_error_exit("Double coordinate");
-#endif
+	
+	Layout::layout_map.push_back( jit_local_site( b , modsize ) * packed_vol + 
+				      jit_local_site( p , Layout::packedLattSize() ) );
 
-	jit_volume_loop.push_back( coord );
+	//Layout::layout_map.push_back( jit_local_site( coord , Layout::subgridLattSize() ) );
 
-	sn[0]++;
+	c[0]++;
 	vol++;
-	//QDPIO::cout << vol << " " << Layout::sitesOnNode() << "\n";
-      } 
+      }
     while (vol <= Layout::sitesOnNode()-1);
 
-    QDPIO::cout << "Done\n";  
 
-  } //
+
+    // std::array<int,Nd> s;  // coordinate within the SIMD block
+    // std::array<int,Nd> b;  // coordinate of the block
+    // s.fill(0);
+    // b.fill(0);
+    // int vol=0;
+
+    // do 
+    //   {
+    // 	if (lexico_percolate( s , Layout::packedLattSize()) ) {
+    // 	  b[0]++;
+    // 	  if (lexico_percolate( b , modsize ))
+    // 	    QDP_error_exit("Didn't expect the b coordinate to percolate.");
+    // 	}
+
+    // 	std::array<int,Nd> coord;
+
+    // 	for(int i=0;i<Nd;++i) { 
+    // 	  coord[i] = b[i] * Layout::packedLattSize()[i] + s[i];
+    // 	  //QDPIO::cout << coord[i] << " ";
+    // 	}
+
+    // 	Layout::layout_map.push_back( jit_local_site( coord , Layout::subgridLattSize() ) );
+
+    // 	s[0]++;
+    // 	vol++;
+    //   }
+    // while (vol <= Layout::sitesOnNode()-1);
+
+#if 0
+    QDPIO::cout << "Layout::layout_map..\n";
+    for(int i: Layout::layout_map)
+      QDPIO::cout << i << " ";
+    QDPIO::cout << "\n";
+
+    for (int y=0;y<Layout::subgridLattSize()[1];++y) 
+      {
+	for (int x=0;x<Layout::subgridLattSize()[0];++x)
+	  {
+	    std::array<int,Nd> coord;
+	    coord[0]=x;
+	    coord[1]=y;
+	    QDPIO::cout << Layout::layout_map[ jit_local_site( coord , Layout::subgridLattSize() ) ] << " ";
+	  }
+	QDPIO::cout << "\n";
+      }
+#endif
+  }
+
+
+
+  void set_datalayout_packed() 
+  {
+    Layout::layout_type = 1;
+  }
+
+
+//   void setup_nodevolume_loop_SIMD()
+//   {
+//     QDPIO::cout << "Setting up node volume loop, SIMD friendly version\n";
+    
+//     std::array<int,Nd> lc;  // coordinate within a subnode
+//     std::array<int,Nd> sn;  // coordinate of the subnode
+//     lc.fill(0);
+//     sn.fill(0);
+
+//     jit_volume_loop.clear();
+//     int vol(0);
+
+//     do
+//       {
+// 	if (lexico_percolate( sn , Layout::nodeGeom()) ) {
+// 	  lc[0]++;
+// 	  if (lexico_percolate( lc , Layout::subnodeLattSize() ))
+// 	    QDP_error_exit("Didn't expect the subnode coordinate to percolate.");
+// 	}
+
+// 	std::array<int,Nd> coord;
+
+// 	for(int i=0;i<Nd;++i) {
+// 	  coord[i] = sn[i] * Layout::subnodeLattSize()[i] + lc[i];
+// 	  //QDPIO::cout << coord[i] << " ";
+// 	}
+// 	//QDPIO::cout << "\n";
+
+// #if 0
+// 	// Paranoic test
+// 	for (auto& s : jit_volume_loop)
+// 	  if ( s == coord )
+// 	    QDP_error_exit("Double coordinate");
+// #endif
+
+// 	jit_volume_loop.push_back( coord );
+
+// 	sn[0]++;
+// 	vol++;
+// 	//QDPIO::cout << vol << " " << Layout::sitesOnNode() << "\n";
+//       } 
+//     while (vol <= Layout::sitesOnNode()-1);
+
+//     QDPIO::cout << "Done\n";  
+
+//   } //
 
 
 } // namespace

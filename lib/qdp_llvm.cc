@@ -468,7 +468,7 @@ namespace QDP {
       oss << "arg" << Idx;
       AI->setName( oss.str() );
 
-#if 0
+#if 1
       if ( vecParamType.at(Idx)->isPointerTy() ) {
       	llvm::AttrBuilder B;
       	B.addAttribute(llvm::Attribute::NoAlias);

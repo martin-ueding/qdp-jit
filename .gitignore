@@ -1,12 +1,7 @@
 *~
-Makefile.in
 Makefile
-configure
+Makefile.in
 aclocal.m4
 autom4te.cache/
-tests/Makefile.in
-docs/Makefile.in
-examples/Makefile.in
-lib/Makefile.in
-include/Makefile.in
-other_libs/Makefile.in
+configure
+include/qdp_config_internal.h.in

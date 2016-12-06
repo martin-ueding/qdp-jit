@@ -1,7 +1,13 @@
 *~
+.deps
 Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache/
+config.log
+config.status
 configure
+include/qdp_config_internal.h
 include/qdp_config_internal.h.in
+include/stamp-h1
+qdp++-config
